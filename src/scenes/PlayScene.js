@@ -16,9 +16,13 @@ const VIEW_H = 960;
 const MIN_SPEED = 70;
 const MAX_SPEED = 300;
 const START_SPEED = 155;
+const STRAFE_SPEED = 170;
 const SPAWN_MARGIN = 100;
-const LASER_COOLDOWN = 140;
+const LASER_COOLDOWN = 240;
+const LASER_LIFETIME = 1000;
+const LASER_FADE = 280;
 const BOMB_COOLDOWN = 420;
+const BOLT_SPEED = 270;
 
 export class PlayScene extends Phaser.Scene {
   constructor() {
@@ -79,10 +83,6 @@ export class PlayScene extends Phaser.Scene {
       missile.destroy();
       this.state.score += 25;
       this.refreshHud();
-    });
-    this.physics.add.overlap(this.lasers, this.bolts, (laser, bolt) => {
-      laser.destroy();
-      bolt.destroy();
     });
     this.physics.add.overlap(this.lasers, this.compGroup, (laser, sprite) => {
       this.strike(sprite, WEAPON.laser, laser);
@@ -255,8 +255,8 @@ export class PlayScene extends Phaser.Scene {
     this.ship.setVelocityY(-this.speed);
 
     let vx = 0;
-    if (keys.left) vx = -260;
-    else if (keys.right) vx = 260;
+    if (keys.left) vx = -STRAFE_SPEED;
+    else if (keys.right) vx = STRAFE_SPEED;
     this.ship.setVelocityX(vx);
   }
 
@@ -273,6 +273,16 @@ export class PlayScene extends Phaser.Scene {
       shot.setAngle(-90);
       shot.setVelocity(0, -520);
       shot.setDepth(15);
+      const fadeTimer = this.time.delayedCall(LASER_LIFETIME, () => {
+        if (!shot.active) return;
+        this.tweens.add({
+          targets: shot,
+          alpha: 0,
+          duration: LASER_FADE,
+          onComplete: () => shot.destroy(),
+        });
+      });
+      shot.once("destroy", () => fadeTimer.remove(false));
     }
 
     if (fireBomb && this.bombCd <= 0) {
@@ -280,11 +290,29 @@ export class PlayScene extends Phaser.Scene {
       if (this.cache.audio.exists("sfx-bomb")) {
         this.sound.play("sfx-bomb", { volume: 0.5 });
       }
-      // Slow climb with a slight lateral drift — heavier ordinance than lasers.
-      const bomb = this.bombs.create(this.ship.x + 6, this.ship.y - 18, "bomb");
-      bomb.setVelocity(40, -220);
+      const bomb = this.bombs.create(this.ship.x, this.ship.y - 28, "bomb");
+      bomb.setVelocity(0, -220);
       bomb.setDepth(15);
+      const fuse = this.time.delayedCall(2000, () => {
+        if (bomb.active) this.explodeBomb(bomb);
+      });
+      bomb.setData("fuse", fuse);
+      bomb.once("destroy", () => fuse.remove(false));
     }
+  }
+
+  explodeBomb(bomb) {
+    const { x, y } = bomb;
+    bomb.destroy();
+    this.playHitSfx();
+    const blast = this.add.circle(x, y, 6, 0xfbbf24, 0.9).setDepth(16);
+    this.tweens.add({
+      targets: blast,
+      scale: 4,
+      alpha: 0,
+      duration: 220,
+      onComplete: () => blast.destroy(),
+    });
   }
 
   updateEnemyFire(delta) {
@@ -298,24 +326,63 @@ export class PlayScene extends Phaser.Scene {
       (c) =>
         c.alive &&
         c.fires &&
-        c.y < cam.y + cam.height + 80 &&
+        c.x > cam.x - 40 &&
+        c.x < cam.x + cam.width + 40 &&
         c.y > cam.y - 40 &&
-        c.x > this.ship.x - 220 &&
-        c.x < this.ship.x + 220,
+        c.y < cam.y + cam.height + 80,
     );
+    // Dense edge batteries saturate you until cleared — volley scales with nearby guns.
+    const volley = Math.min(8, Math.max(2, Math.ceil(shooters.length / 4)));
     Phaser.Utils.Array.Shuffle(shooters);
-    for (const gun of shooters.slice(0, 2)) {
+    for (const gun of shooters.slice(0, volley)) {
       if (gun.fires === "missile") {
         const m = this.missiles.create(gun.x, gun.y + 18, "missile");
         m.setDepth(12);
         m.setData("tracking", true);
       } else {
         const b = this.bolts.create(gun.x, gun.y + 16, "bolt");
-        const angle = Phaser.Math.Angle.Between(gun.x, gun.y, this.ship.x, this.ship.y);
-        this.physics.velocityFromRotation(angle, 180, b.body.velocity);
+        const aim = this.leadBoltAim(gun.x, gun.y);
+        const angle = Phaser.Math.Angle.Between(gun.x, gun.y, aim.x, aim.y);
+        this.physics.velocityFromRotation(angle, BOLT_SPEED, b.body.velocity);
         b.setDepth(12);
       }
     }
+  }
+
+  /** Intercept aim — solves when the bolt meets the ship; falls back to direct fire. */
+  leadBoltAim(gunX, gunY) {
+    const px = this.ship.x - gunX;
+    const py = this.ship.y - gunY;
+    const vx = this.ship.body.velocity.x;
+    const vy = this.ship.body.velocity.y;
+    const s = BOLT_SPEED;
+    const a = vx * vx + vy * vy - s * s;
+    const b = 2 * (px * vx + py * vy);
+    const c = px * px + py * py;
+    let t = null;
+
+    if (Math.abs(a) < 1e-4) {
+      if (Math.abs(b) > 1e-4) t = -c / b;
+    } else {
+      const disc = b * b - 4 * a * c;
+      if (disc >= 0) {
+        const root = Math.sqrt(disc);
+        const t1 = (-b - root) / (2 * a);
+        const t2 = (-b + root) / (2 * a);
+        if (t1 > 0 && t2 > 0) t = Math.min(t1, t2);
+        else if (t1 > 0) t = t1;
+        else if (t2 > 0) t = t2;
+      }
+    }
+
+    if (t == null || t <= 0) {
+      return { x: this.ship.x, y: this.ship.y };
+    }
+
+    return {
+      x: this.ship.x + vx * t,
+      y: this.ship.y + vy * t,
+    };
   }
 
   steerMissiles() {

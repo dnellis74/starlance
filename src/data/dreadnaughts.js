@@ -20,7 +20,7 @@ export const LEVIATHAN = {
   /** Empty space below the tip before the interceptor starts. */
   approachLead: 900,
   /** Clearance above the stern for the stargate exit. */
-  exitLead: 520,
+  exitLead: 720,
   components: [
     { kind: "engine", t: 0.965, lane: -0.78 },
     { kind: "engine", t: 0.965, lane: -0.28 },
@@ -40,14 +40,9 @@ export const LEVIATHAN = {
     ...ventRow(0.42, 0.9, 8, -0.48),
     ...ventRow(0.4, 0.88, 8, 0.5),
 
-    { kind: "cannon", t: 0.88, lane: -0.68 },
-    { kind: "cannon", t: 0.82, lane: 0.7 },
-    { kind: "cannon", t: 0.68, lane: -0.7 },
-    { kind: "cannon", t: 0.62, lane: 0.62 },
-    { kind: "cannon", t: 0.48, lane: -0.62 },
-    { kind: "cannon", t: 0.38, lane: 0.55 },
-    { kind: "cannon", t: 0.22, lane: -0.4 },
-    { kind: "cannon", t: 0.12, lane: 0.32 },
+    // Outer skin bristling with guns — fly the hull edges only after clearing them.
+    ...edgeRow("cannon", 0.08, 0.97, 30, -0.9),
+    ...edgeRow("cannon", 0.08, 0.97, 30, 0.9),
 
     { kind: "launcher", t: 0.84, lane: -0.12 },
     { kind: "launcher", t: 0.66, lane: 0.22 },
@@ -63,12 +58,16 @@ export const LEVIATHAN = {
 };
 
 function ventRow(t0, t1, count, lane) {
-  const vents = [];
+  return edgeRow("vent", t0, t1, count, lane);
+}
+
+function edgeRow(kind, t0, t1, count, lane) {
+  const row = [];
   for (let i = 0; i < count; i += 1) {
     const u = count === 1 ? 0 : i / (count - 1);
-    vents.push({ kind: "vent", t: t0 + (t1 - t0) * u, lane });
+    row.push({ kind, t: t0 + (t1 - t0) * u, lane });
   }
-  return vents;
+  return row;
 }
 
 export function hullWidth(def) {
