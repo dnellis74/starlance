@@ -1,0 +1,75 @@
+/** Shared component catalog. New dreadnaught classes reuse these kinds. */
+
+export const WEAPON = {
+  laser: "laser",
+  bomb: "bomb",
+};
+
+export const KINDS = {
+  engine: {
+    label: "Engine",
+    weapon: WEAPON.bomb,
+    hp: 1,
+    score: 250,
+    w: 56,
+    h: 40,
+    color: 0xf59e0b,
+  },
+  bridge: {
+    label: "Bridge",
+    weapon: WEAPON.laser,
+    hp: 2,
+    score: 400,
+    w: 52,
+    h: 36,
+    color: 0x38bdf8,
+  },
+  vent: {
+    label: "Energy vent",
+    weapon: WEAPON.bomb,
+    hp: 1,
+    score: 150,
+    w: 28,
+    h: 28,
+    color: 0xa78bfa,
+  },
+  silo: {
+    label: "Missile silo",
+    weapon: WEAPON.bomb,
+    hp: 2,
+    score: 500,
+    w: 40,
+    h: 40,
+    color: 0xf43f5e,
+  },
+  cannon: {
+    label: "Rocket cannon",
+    weapon: WEAPON.laser,
+    hp: 1,
+    score: 80,
+    w: 30,
+    h: 24,
+    color: 0xfb7185,
+    fires: "bolt",
+  },
+  launcher: {
+    label: "Launcher",
+    weapon: WEAPON.laser,
+    hp: 1,
+    score: 120,
+    w: 32,
+    h: 26,
+    color: 0xfb923c,
+    fires: "missile",
+  },
+  tower: {
+    label: "Tower",
+    weapon: WEAPON.laser,
+    hp: 1,
+    score: 100,
+    w: 26,
+    h: 34,
+    color: 0x34d399,
+    fires: "bolt",
+  },
+};
