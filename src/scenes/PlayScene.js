@@ -123,6 +123,11 @@ export class PlayScene extends Phaser.Scene {
     this.bgm = null;
   }
 
+  playHitSfx() {
+    if (!this.cache.audio.exists("sfx-explosion")) return;
+    this.sound.play("sfx-explosion", { volume: 0.55 });
+  }
+
   update(_time, delta) {
     if (!this.ship || this.transitioning || this.state?.outcome) return;
 
@@ -212,6 +217,7 @@ export class PlayScene extends Phaser.Scene {
     const result = damageComponent(this.state, id);
     if (!result) return;
 
+    this.playHitSfx();
     if (result.destroyed) {
       sprite.setTexture(`comp-${component.kind}-dead`);
       sprite.disableBody(true, false);
@@ -233,6 +239,7 @@ export class PlayScene extends Phaser.Scene {
   hitPlayer(shot) {
     if (this.invuln > 0 || this.transitioning) return;
     shot.destroy();
+    this.playHitSfx();
     loseLife(this.state);
     this.invuln = 1400;
     this.cameras.main.shake(180, 0.01);
@@ -259,6 +266,9 @@ export class PlayScene extends Phaser.Scene {
 
     if (fireLaser && this.laserCd <= 0) {
       this.laserCd = LASER_COOLDOWN;
+      if (this.cache.audio.exists("sfx-laser")) {
+        this.sound.play("sfx-laser", { volume: 0.45 });
+      }
       const shot = this.lasers.create(this.ship.x, this.ship.y - 28, "laser");
       shot.setAngle(-90);
       shot.setVelocity(0, -520);
@@ -267,6 +277,9 @@ export class PlayScene extends Phaser.Scene {
 
     if (fireBomb && this.bombCd <= 0) {
       this.bombCd = BOMB_COOLDOWN;
+      if (this.cache.audio.exists("sfx-bomb")) {
+        this.sound.play("sfx-bomb", { volume: 0.5 });
+      }
       // Slow climb with a slight lateral drift — heavier ordinance than lasers.
       const bomb = this.bombs.create(this.ship.x + 6, this.ship.y - 18, "bomb");
       bomb.setVelocity(40, -220);

@@ -34,6 +34,9 @@ export class MenuScene extends Phaser.Scene {
     this.starting = true;
     keys.enter = false;
     keys.space = false;
+    if (this.cache.audio.exists("sfx-engage")) {
+      this.sound.play("sfx-engage", { volume: 0.6 });
+    }
     setLaunchVisible(false);
     this.scene.start("BriefingScene");
   }
