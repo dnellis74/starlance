@@ -101,6 +101,26 @@ export class PlayScene extends Phaser.Scene {
     this.buildHud();
     this.refreshHud();
     this.flashBanner("ATTACK PASS 1");
+    this.startBgm();
+    this.events.once("shutdown", () => this.stopBgm());
+  }
+
+  startBgm() {
+    if (!this.cache.audio.exists("bgm-play")) return;
+    this.stopBgm();
+    this.bgm = this.sound.add("bgm-play", { loop: true, volume: 0.4 });
+    const play = () => {
+      if (this.bgm && !this.bgm.isPlaying) this.bgm.play();
+    };
+    if (this.sound.locked) this.sound.once("unlocked", play);
+    else play();
+  }
+
+  stopBgm() {
+    if (!this.bgm) return;
+    this.bgm.stop();
+    this.bgm.destroy();
+    this.bgm = null;
   }
 
   update(_time, delta) {

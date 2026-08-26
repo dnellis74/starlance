@@ -7,6 +7,10 @@ export class BootScene extends Phaser.Scene {
     super("BootScene");
   }
 
+  preload() {
+    this.load.audio("bgm-play", "assets/audio/blackout-circuit.mp3");
+  }
+
   create() {
     generateTextures(this);
     setLaunchVisible(true);
