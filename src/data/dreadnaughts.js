@@ -4,22 +4,24 @@ import { KINDS } from "./kinds.js";
  * MVP: one class. Additional classes should be new data objects of this shape,
  * not new scene code.
  *
- * Local layout uses (t, lane) on a left-pointing tip → right stern wedge:
- *   t    = 0 at the bow tip (left) … 1 at the stern (right, full height)
- *   lane = -1 top skin … 0 centerline … +1 bottom skin
- * Height is length / 3 so the hull is taller than the viewport and needs vertical scroll.
- * The player approaches from open space into the tip.
+ * Portrait layout — tip at the bottom, stern at the top (Phaser y grows downward,
+ * so the ship flies toward smaller y):
+ *   t    = 0 at the bow tip (bottom) … 1 at the stern (top, full width)
+ *   lane = -1 left skin … 0 centerline … +1 right skin
+ * Hull width at the stern is length / 3 — wider than a phone viewport, so the
+ * player must strafe. Forward length exceeds the viewport, so the camera scrolls up.
  */
 export const LEVIATHAN = {
   id: "leviathan",
   name: "Leviathan-class",
   length: 3600,
   aspect: 3,
-  padY: 260,
-  /** Pixels of empty approach before the tip (about ~5s at start speed). */
-  approachLead: 800,
+  padX: 120,
+  /** Empty space below the tip before the interceptor starts. */
+  approachLead: 900,
+  /** Clearance above the stern for the stargate exit. */
+  exitLead: 520,
   components: [
-    // Stern engines (wide end, right)
     { kind: "engine", t: 0.965, lane: -0.78 },
     { kind: "engine", t: 0.965, lane: -0.28 },
     { kind: "engine", t: 0.965, lane: 0.28 },
@@ -69,36 +71,42 @@ function ventRow(t0, t1, count, lane) {
   return vents;
 }
 
-export function hullHeight(def) {
+export function hullWidth(def) {
   return def.length / (def.aspect ?? 3);
 }
 
-/** Half-height of the wedge at normalized length t (0 tip, 1 stern). */
+/** Half-width of the wedge at normalized length t (0 tip, 1 stern). */
 export function wedgeHalfAt(def, t) {
   const clamped = Math.max(0, Math.min(1, t));
-  return (hullHeight(def) / 2) * clamped;
+  return (hullWidth(def) / 2) * clamped;
 }
 
-export function placeOnWedge(def, originX, hullTop, spec) {
+export function placeOnWedge(def, centerX, tipY, spec) {
   const t = spec.t;
   const half = Math.max(18, wedgeHalfAt(def, t));
-  const cy = hullTop + hullHeight(def) / 2;
   const lane = Math.max(-0.92, Math.min(0.92, spec.lane ?? 0));
   return {
-    x: originX + t * def.length,
-    y: cy + lane * half,
+    x: centerX + lane * half,
+    // Tip at larger y (bottom); stern toward smaller y (top).
+    y: tipY - t * def.length,
   };
 }
 
-export function instantiateDreadnaught(def, originX = null) {
-  const lead = def.approachLead ?? 800;
-  const startX = originX ?? lead;
-  const height = hullHeight(def);
-  const hullY = def.padY ?? 260;
+export function instantiateDreadnaught(def) {
+  const lead = def.approachLead ?? 900;
+  const exit = def.exitLead ?? 520;
+  const width = hullWidth(def);
+  const padX = def.padX ?? 120;
+  const worldW = width + padX * 2;
+  const worldH = exit + def.length + lead;
+  const centerX = worldW / 2;
+  const tipY = exit + def.length;
+  const sternY = exit;
+
   const components = def.components.map((c, i) => {
     const spec = KINDS[c.kind];
     if (!spec) throw new Error(`Unknown component kind: ${c.kind}`);
-    const pos = placeOnWedge(def, startX, hullY, c);
+    const pos = placeOnWedge(def, centerX, tipY, c);
     return {
       id: `${c.kind}-${i}`,
       kind: c.kind,
@@ -120,12 +128,15 @@ export function instantiateDreadnaught(def, originX = null) {
     id: def.id,
     name: def.name,
     length: def.length,
-    hullY,
-    hullHeight: height,
+    hullWidth: width,
     approachLead: lead,
-    originX: startX,
-    endX: startX + def.length,
-    worldHeight: hullY * 2 + height,
+    exitLead: exit,
+    centerX,
+    tipY,
+    sternY,
+    endY: sternY,
+    worldWidth: worldW,
+    worldHeight: worldH,
     components,
   };
 }

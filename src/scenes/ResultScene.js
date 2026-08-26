@@ -38,34 +38,41 @@ export class ResultScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x05070c);
     this.add
-      .text(width / 2, 160, info.title, {
-        fontFamily: "Georgia, serif",
-        fontSize: "32px",
+      .text(width / 2, height * 0.28, info.title, {
+        fontFamily: "Orbitron, sans-serif",
+        fontSize: "28px",
         color: win ? "#67e8f9" : "#fb7185",
+        align: "center",
+        wordWrap: { width: width * 0.86 },
       })
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, 220, info.body, {
-        fontFamily: "sans-serif",
-        fontSize: "16px",
+      .text(width / 2, height * 0.38, info.body, {
+        fontFamily: "Rajdhani, sans-serif",
+        fontSize: "18px",
         color: "#94a3b8",
         align: "center",
-        wordWrap: { width: 640 },
+        wordWrap: { width: width * 0.82 },
       })
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, 300, `Score  ${this.result.score}     Passes  ${this.result.pass}`, {
-        fontFamily: "monospace",
-        fontSize: "18px",
-        color: "#e2e8f0",
-      })
+      .text(
+        width / 2,
+        height * 0.5,
+        `Score  ${this.result.score}     Passes  ${this.result.pass}`,
+        {
+          fontFamily: "monospace",
+          fontSize: "16px",
+          color: "#e2e8f0",
+        },
+      )
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, 420, "ENTER  ·  fly another pass", {
-        fontFamily: "sans-serif",
+      .text(width / 2, height * 0.62, "ENTER  ·  fly another pass", {
+        fontFamily: "Rajdhani, sans-serif",
         fontSize: "16px",
         color: "#38bdf8",
       })

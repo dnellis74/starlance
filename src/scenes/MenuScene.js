@@ -66,10 +66,11 @@ export class MenuScene extends Phaser.Scene {
     this.driftStars = (delta) => {
       const dt = delta / 1000;
       for (const star of this.stars) {
-        star.x -= star.getData("drift") * dt;
-        if (star.x < -2) {
-          star.x = w + 2;
-          star.y = Phaser.Math.Between(0, h);
+        // Drift downward so the sky reads as climbing.
+        star.y += star.getData("drift") * dt;
+        if (star.y > h + 2) {
+          star.y = -2;
+          star.x = Phaser.Math.Between(0, w);
         }
       }
     };
@@ -87,23 +88,23 @@ export class MenuScene extends Phaser.Scene {
   }
 
   drawWedgeSilhouette(w, h) {
-    // Distant Leviathan tip-first silhouette — atmosphere, not a HUD card.
+    // Tip at the bottom, stern toward the top — matches climb-up play.
     const g = this.add.graphics().setAlpha(0.55);
-    const tipX = w * 0.08;
-    const sternX = w * 1.05;
-    const cy = h * 0.58;
-    const half = h * 0.34;
+    const tipY = h * 0.7;
+    const sternY = h * 0.34;
+    const cx = w * 0.5;
+    const half = w * 0.38;
 
     g.fillStyle(0x0b1a28, 0.95);
-    g.fillTriangle(tipX, cy, sternX, cy - half, sternX, cy + half);
+    g.fillTriangle(cx, tipY, cx - half, sternY, cx + half, sternY);
     g.lineStyle(2, 0x5eead4, 0.22);
-    g.strokeTriangle(tipX, cy, sternX, cy - half, sternX, cy + half);
+    g.strokeTriangle(cx, tipY, cx - half, sternY, cx + half, sternY);
     g.lineStyle(1, 0xf59e0b, 0.2);
     for (let i = 1; i <= 5; i += 1) {
       const t = i / 6;
-      const x = tipX + (sternX - tipX) * t;
+      const y = tipY + (sternY - tipY) * t;
       const hh = half * t;
-      g.lineBetween(x, cy - hh, x, cy + hh);
+      g.lineBetween(cx - hh, y, cx + hh, y);
     }
 
     this.tweens.add({
@@ -117,43 +118,43 @@ export class MenuScene extends Phaser.Scene {
   }
 
   drawBrand(w, h) {
-    const brandY = h * 0.28;
+    const brandY = h * 0.22;
 
     this.add
-      .text(w / 2, brandY - 42, "SECTOR DEFENSE PROTOCOL", {
+      .text(w / 2, brandY - 36, "SECTOR DEFENSE PROTOCOL", {
         fontFamily: BODY,
-        fontSize: "15px",
+        fontSize: "13px",
         color: "#5eead4",
-        letterSpacing: 6,
+        letterSpacing: 5,
       })
       .setOrigin(0.5)
       .setAlpha(0.85);
 
     const title = this.add
-      .text(w / 2, brandY + 18, "STARLANCE", {
+      .text(w / 2, brandY + 14, "STARLANCE", {
         fontFamily: DISPLAY,
-        fontSize: "72px",
+        fontSize: "52px",
         fontStyle: "800",
         color: "#f8fafc",
-        letterSpacing: 10,
+        letterSpacing: 8,
       })
       .setOrigin(0.5)
       .setShadow(0, 0, "#2dd4bf", 18, true, true);
 
     // Accent underline under the brand.
-    const rule = this.add.rectangle(w / 2, brandY + 64, 0, 2, 0xf59e0b, 0.9);
+    const rule = this.add.rectangle(w / 2, brandY + 52, 0, 2, 0xf59e0b, 0.9);
     this.tweens.add({
       targets: rule,
-      width: 220,
+      width: 180,
       duration: 900,
       ease: "Cubic.easeOut",
       delay: 180,
     });
 
     this.add
-      .text(w / 2, brandY + 96, "An homage to the Dreadnaught Factor", {
+      .text(w / 2, brandY + 82, "An homage to the Dreadnaught Factor", {
         fontFamily: BODY,
-        fontSize: "22px",
+        fontSize: "18px",
         color: "#94a3b8",
         letterSpacing: 1,
       })
@@ -170,7 +171,7 @@ export class MenuScene extends Phaser.Scene {
 
   drawCue(w, h) {
     const hint = this.add
-      .text(w / 2, h * 0.78, "ENTER  ·  ENGAGE", {
+      .text(w / 2, h * 0.8, "ENTER  ·  ENGAGE", {
         fontFamily: DISPLAY,
         fontSize: "16px",
         color: "#ccfbf1",
@@ -188,11 +189,11 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(w / 2, h * 0.86, "Z laser   X bomb   arrows speed & align", {
+      .text(w / 2, h * 0.86, "↑ climb faster   ←→ align   Z laser   X bomb", {
         fontFamily: BODY,
-        fontSize: "15px",
+        fontSize: "14px",
         color: "#64748b",
-        letterSpacing: 2,
+        letterSpacing: 1,
       })
       .setOrigin(0.5);
   }

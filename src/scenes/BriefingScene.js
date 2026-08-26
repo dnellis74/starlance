@@ -33,11 +33,11 @@ export class BriefingScene extends Phaser.Scene {
     panel.setStrokeStyle(1, 0x2dd4bf, 0.35);
 
     this.add
-      .text(w / 2, 78, "ORDERS · TRANSMISSION", {
+      .text(w / 2, h * 0.12, "ORDERS · TRANSMISSION", {
         fontFamily: DISPLAY,
-        fontSize: "14px",
+        fontSize: "13px",
         color: "#5eead4",
-        letterSpacing: 5,
+        letterSpacing: 4,
       })
       .setOrigin(0.5)
       .setAlpha(0.9);
@@ -45,11 +45,11 @@ export class BriefingScene extends Phaser.Scene {
     const body = this.add
       .text(w / 2, h / 2 - 8, ORDERS, {
         fontFamily: DISPLAY,
-        fontSize: "20px",
+        fontSize: "17px",
         color: "#e2e8f0",
         align: "center",
-        lineSpacing: 10,
-        wordWrap: { width: w * 0.68 },
+        lineSpacing: 8,
+        wordWrap: { width: w * 0.7 },
       })
       .setOrigin(0.5)
       .setAlpha(0);
