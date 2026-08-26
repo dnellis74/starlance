@@ -4,15 +4,15 @@ import { setLaunchVisible } from "../ui.js";
 
 const COPY = {
   destroyed: {
-    title: "DREADNAUGHT DESTROYED",
-    body: "Every energy vent is gone. The hull goes critical.",
+    title: "HULL CRITICAL",
+    body: "Every energy vent is gone. The dreadnaught tears itself apart.",
   },
   neutralized: {
-    title: "DREADNAUGHT NEUTRALIZED",
+    title: "THREAT NEUTRALIZED",
     body: "It reached the stargate, but every silo is cold. The planet holds.",
   },
   planetLost: {
-    title: "PLANET DESTROYED",
+    title: "GATE BREACHED",
     body: "The dreadnaught reached the stargate with silos still armed.",
   },
   gameOver: {

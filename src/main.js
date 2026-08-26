@@ -1,13 +1,14 @@
 import Phaser from "./engine.js";
 import { BootScene } from "./scenes/BootScene.js";
 import { MenuScene } from "./scenes/MenuScene.js";
+import { BriefingScene } from "./scenes/BriefingScene.js";
 import { PlayScene } from "./scenes/PlayScene.js";
 import { ResultScene } from "./scenes/ResultScene.js";
 
 const config = {
   type: Phaser.AUTO,
   parent: "game",
-  backgroundColor: "#05070c",
+  backgroundColor: "#02040a",
   autoFocus: false,
   banner: false,
   disableContextMenu: true,
@@ -29,7 +30,7 @@ const config = {
       debug: false,
     },
   },
-  scene: [BootScene, MenuScene, PlayScene, ResultScene],
+  scene: [BootScene, MenuScene, BriefingScene, PlayScene, ResultScene],
 };
 
 const game = new Phaser.Game(config);
@@ -39,6 +40,10 @@ function launchFromDom(event) {
   event.preventDefault();
   event.stopPropagation();
   if (game.scene.isActive("PlayScene")) return;
+  if (game.scene.isActive("BriefingScene")) {
+    game.scene.getScene("BriefingScene").advance();
+    return;
+  }
   if (game.scene.isActive("ResultScene")) {
     game.scene.start("MenuScene");
     return;
