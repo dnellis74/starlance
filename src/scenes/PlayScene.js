@@ -5,8 +5,9 @@ import { setLaunchVisible } from "../ui.js";
 import {
   createGameState,
   damageComponent,
-  completePass,
-  loseLife,
+  advanceDreadnaught,
+  beginRun,
+  applyDamage,
   hudSnapshot,
 } from "../state/gameState.js";
 
@@ -23,6 +24,8 @@ const LASER_LIFETIME = 1000;
 const LASER_FADE = 280;
 const BOMB_COOLDOWN = 420;
 const BOLT_SPEED = 270;
+const BOLT_DAMAGE = 50;
+const MISSILE_DAMAGE = 100;
 
 export class PlayScene extends Phaser.Scene {
   constructor() {
@@ -90,8 +93,8 @@ export class PlayScene extends Phaser.Scene {
     this.physics.add.overlap(this.bombs, this.compGroup, (bomb, sprite) => {
       this.strike(sprite, WEAPON.bomb, bomb);
     });
-    this.physics.add.overlap(this.ship, this.bolts, (_, shot) => this.hitPlayer(shot));
-    this.physics.add.overlap(this.ship, this.missiles, (_, shot) => this.hitPlayer(shot));
+    this.physics.add.overlap(this.ship, this.bolts, (_, shot) => this.hitPlayer(shot, BOLT_DAMAGE));
+    this.physics.add.overlap(this.ship, this.missiles, (_, shot) => this.hitPlayer(shot, MISSILE_DAMAGE));
 
     // Keep the ship low so more of the path ahead (toward the stargate) stays visible.
     this.cameras.main.startFollow(this.ship, true, 0.16, 0.14);
@@ -99,8 +102,9 @@ export class PlayScene extends Phaser.Scene {
     this.cameras.main.setDeadzone(28, 48);
 
     this.buildHud();
+    beginRun(this.state);
     this.refreshHud();
-    this.flashBanner("ATTACK PASS 1");
+    this.flashBanner(this.attackPassLabel());
     this.startBgm();
     this.events.once("shutdown", () => this.stopBgm());
   }
@@ -236,15 +240,41 @@ export class PlayScene extends Phaser.Scene {
     if (this.state.outcome === "destroyed") this.endRun();
   }
 
-  hitPlayer(shot) {
+  hitPlayer(shot, amount) {
     if (this.invuln > 0 || this.transitioning) return;
     shot.destroy();
     this.playHitSfx();
-    loseLife(this.state);
+    applyDamage(this.state, amount);
     this.invuln = 1400;
     this.cameras.main.shake(180, 0.01);
     this.refreshHud();
-    if (this.state.outcome === "gameOver") this.endRun();
+    if (this.state.damage <= 0) this.fighterDestroyed();
+  }
+
+  fighterDestroyed() {
+    if (this.transitioning) return;
+    this.transitioning = true;
+    this.ship.setVelocity(0, 0);
+    this.clearProjectiles();
+    this.flashBanner("FIGHTER DESTROYED", 1200);
+
+    this.time.delayedCall(1500, () => {
+      beginRun(this.state, { nextFighter: true });
+      const dn = this.state.dreadnaught;
+      this.ship.setPosition(dn.centerX, dn.tipY + dn.approachLead - SPAWN_MARGIN);
+      this.speed = START_SPEED;
+      this.invuln = 2200;
+      this.refreshHud();
+      this.flashBanner(this.attackPassLabel(), 1000);
+      this.transitioning = false;
+    });
+  }
+
+  clearProjectiles() {
+    this.lasers.clear(true, true);
+    this.bombs.clear(true, true);
+    this.bolts.clear(true, true);
+    this.missiles.clear(true, true);
   }
 
   updateShip() {
@@ -317,36 +347,40 @@ export class PlayScene extends Phaser.Scene {
 
   updateEnemyFire(delta) {
     const interval = this.state.skill.fireIntervalMs / this.state.fireRateMul;
-    this._fireAcc = (this._fireAcc ?? 0) + delta;
-    if (this._fireAcc < interval) return;
-    this._fireAcc = 0;
-
     const cam = this.cameras.main.worldView;
-    const shooters = this.state.dreadnaught.components.filter(
-      (c) =>
-        c.alive &&
-        c.fires &&
-        c.x > cam.x - 40 &&
-        c.x < cam.x + cam.width + 40 &&
-        c.y > cam.y - 40 &&
-        c.y < cam.y + cam.height + 80,
-    );
-    // Dense edge batteries saturate you until cleared — volley scales with nearby guns.
-    const volley = Math.min(8, Math.max(2, Math.ceil(shooters.length / 4)));
-    Phaser.Utils.Array.Shuffle(shooters);
-    for (const gun of shooters.slice(0, volley)) {
-      if (gun.fires === "missile") {
-        const m = this.missiles.create(gun.x, gun.y + 18, "missile");
-        m.setDepth(12);
-        m.setData("tracking", true);
-      } else {
-        const b = this.bolts.create(gun.x, gun.y + 16, "bolt");
-        const aim = this.leadBoltAim(gun.x, gun.y);
-        const angle = Phaser.Math.Angle.Between(gun.x, gun.y, aim.x, aim.y);
-        this.physics.velocityFromRotation(angle, BOLT_SPEED, b.body.velocity);
-        b.setDepth(12);
+
+    for (const gun of this.state.dreadnaught.components) {
+      if (!gun.alive || !gun.fires) continue;
+      if (
+        gun.x <= cam.x - 40 ||
+        gun.x >= cam.x + cam.width + 40 ||
+        gun.y <= cam.y - 40 ||
+        gun.y >= cam.y + cam.height + 80
+      ) {
+        continue;
       }
+
+      gun.fireAcc = (gun.fireAcc ?? 0) + delta;
+      if (gun.fireAcc < interval) continue;
+      gun.fireAcc = 0;
+
+      if (gun.fires === "missile") this.fireMissile(gun);
+      else if (gun.fires === "bolt") this.fireBolt(gun);
     }
+  }
+
+  fireBolt(gun) {
+    const b = this.bolts.create(gun.x, gun.y + 16, "bolt");
+    const aim = this.leadBoltAim(gun.x, gun.y);
+    const angle = Phaser.Math.Angle.Between(gun.x, gun.y, aim.x, aim.y);
+    this.physics.velocityFromRotation(angle, BOLT_SPEED, b.body.velocity);
+    b.setDepth(12);
+  }
+
+  fireMissile(gun) {
+    const m = this.missiles.create(gun.x, gun.y + 18, "missile");
+    m.setDepth(12);
+    m.setData("tracking", true);
   }
 
   /** Intercept aim — solves when the bolt meets the ship; falls back to direct fire. */
@@ -417,13 +451,15 @@ export class PlayScene extends Phaser.Scene {
     this.ship.setVelocity(0, 0);
 
     // Deviation: fade and snap back below the tip instead of a separate re-approach cinematic.
-    completePass(this.state);
+    advanceDreadnaught(this.state);
     this.refreshHud();
 
     if (this.state.outcome) {
       this.endRun();
       return;
     }
+
+    beginRun(this.state);
 
     this.cameras.main.fadeOut(220, 5, 8, 16);
     this.cameras.main.once("camerafadeoutcomplete", () => {
@@ -432,8 +468,12 @@ export class PlayScene extends Phaser.Scene {
       this.speed = START_SPEED;
       this.cameras.main.fadeIn(280, 5, 8, 16);
       this.transitioning = false;
-      this.flashBanner(`ATTACK PASS ${this.state.pass}`);
+      this.flashBanner(this.attackPassLabel());
     });
+  }
+
+  attackPassLabel() {
+    return `ATTACK PASS ${this.state.pass} · FIGHTER ${this.state.fighter}`;
   }
 
   endRun() {
@@ -473,12 +513,12 @@ export class PlayScene extends Phaser.Scene {
     const h = hudSnapshot(this.state);
     const fire = h.fireRateMul < 1 ? "BRIDGES DOWN · 50% fire" : "bridges intact";
     this.hudText.setText(
-      `SCORE ${String(h.score).padStart(6, "0")}  LIVES ${h.lives}  PASS ${h.pass}  RANGE ${h.range.toFixed(1)}/${h.maxRange}\n` +
+      `SCORE ${String(h.score).padStart(6, "0")}  F${h.fighter}  DAMAGE ${h.damage}/${h.maxDamage}  PASS ${h.pass}  RANGE ${h.range.toFixed(1)}/${h.maxRange}\n` +
         `VENTS ${h.vents}/${h.ventsMax}  SILOS ${h.silos}/${h.silosMax}  ENGINES ${h.engines}/${h.enginesMax}  ${fire}`,
     );
   }
 
-  flashBanner(msg) {
+  flashBanner(msg, holdMs = 700) {
     const t = this.add
       .text(VIEW_W / 2, 110, msg, {
         fontFamily: "Orbitron, sans-serif",
@@ -491,7 +531,7 @@ export class PlayScene extends Phaser.Scene {
     this.tweens.add({
       targets: t,
       alpha: 0,
-      delay: 700,
+      delay: holdMs,
       duration: 400,
       onComplete: () => t.destroy(),
     });

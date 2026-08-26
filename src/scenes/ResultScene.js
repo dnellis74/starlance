@@ -13,11 +13,11 @@ const COPY = {
   },
   planetLost: {
     title: "GATE BREACHED",
-    body: "The dreadnaught reached the stargate with silos still armed.",
+    body: "The dreadnaught closed the distance. The stargate is lost.",
   },
   gameOver: {
     title: "INTERCEPTOR LOST",
-    body: "No lives remain. The dreadnaught continues its run.",
+    body: "Your hull is gone. The dreadnaught continues its run.",
   },
 };
 

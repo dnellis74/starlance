@@ -11,7 +11,7 @@ export const SKILLS = {
   standard: {
     id: "standard",
     name: "Standard",
-    lives: 3,
+    maxDamage: 100,
     maxRange: 7,
     baseAdvance: 1,
     engineSlowPerKill: 0.18,
@@ -26,8 +26,9 @@ export function createGameState(skillId = "standard") {
 
   return {
     score: 0,
-    lives: skill.lives,
-    pass: 1,
+    fighter: 1,
+    damage: skill.maxDamage,
+    pass: 0,
     range: skill.maxRange,
     skill,
     outcome: null,
@@ -70,8 +71,7 @@ export function syncDerivedState(state) {
   };
 }
 
-export function completePass(state) {
-  state.pass += 1;
+export function advanceDreadnaught(state) {
   const totalEngines = countKind(state.dreadnaught, "engine");
   const enginesDestroyed = totalEngines - countAlive(state.dreadnaught, "engine");
   const step = Math.max(
@@ -92,18 +92,27 @@ export function completePass(state) {
   return state.outcome;
 }
 
-export function loseLife(state) {
-  state.lives -= 1;
-  if (state.lives <= 0 && !state.outcome) {
-    state.outcome = "gameOver";
-  }
-  return state.outcome;
+export function applyDamage(state, amount) {
+  state.damage = Math.max(0, state.damage - amount);
+}
+
+export function resetRunHealth(state) {
+  state.damage = state.skill.maxDamage;
+}
+
+/** Start a new run — always bumps attack pass; optionally swaps in the next fighter. */
+export function beginRun(state, { nextFighter = false } = {}) {
+  state.pass += 1;
+  if (nextFighter) state.fighter += 1;
+  resetRunHealth(state);
 }
 
 export function hudSnapshot(state) {
   return {
     score: state.score,
-    lives: state.lives,
+    fighter: state.fighter,
+    damage: state.damage,
+    maxDamage: state.skill.maxDamage,
     pass: state.pass,
     range: state.range,
     maxRange: state.skill.maxRange,
