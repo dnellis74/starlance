@@ -2,7 +2,7 @@ import Phaser from "../engine.js";
 import { keys } from "../keys.js";
 import { formatPilotStatus } from "../data/pilots.js";
 import { WEAPON } from "../data/kinds.js";
-import { setLaunchVisible } from "../ui.js";
+import { getDifficultyMods } from "../difficulty.js";
 import {
   createGameState,
   damageComponent,
@@ -29,6 +29,7 @@ const LASER_LIFETIME = 1000;
 const LASER_FADE = 280;
 const BOMB_COOLDOWN = 420;
 const BOLT_SPEED = 270;
+const MISSILE_SPEED = 150;
 const BOLT_DAMAGE = 50;
 const MISSILE_DAMAGE = 100;
 
@@ -38,7 +39,6 @@ export class PlayScene extends Phaser.Scene {
   }
 
   create() {
-    setLaunchVisible(false);
     try {
       this.bootPlay();
     } catch (err) {
@@ -387,7 +387,9 @@ export class PlayScene extends Phaser.Scene {
   }
 
   updateEnemyFire(delta) {
-    const interval = this.state.skill.fireIntervalMs / this.state.fireRateMul;
+    const mods = getDifficultyMods();
+    const interval =
+      this.state.skill.fireIntervalMs / (this.state.fireRateMul * mods.turretFireRate);
     const cam = this.cameras.main.worldView;
 
     for (const gun of this.state.dreadnaught.components) {
@@ -461,10 +463,11 @@ export class PlayScene extends Phaser.Scene {
   }
 
   steerMissiles() {
+    const missileSpeed = MISSILE_SPEED * getDifficultyMods().missileSpeed;
     this.missiles.children.iterate((m) => {
       if (!m) return;
       const angle = Phaser.Math.Angle.Between(m.x, m.y, this.ship.x, this.ship.y);
-      this.physics.velocityFromRotation(angle, 150, m.body.velocity);
+      this.physics.velocityFromRotation(angle, missileSpeed, m.body.velocity);
       m.setRotation(angle);
     });
   }

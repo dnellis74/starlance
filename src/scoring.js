@@ -1,14 +1,19 @@
 import { PILOTS, PILOT_STATUS } from "./data/pilots.js";
+import { getDifficultyMods } from "./difficulty.js";
 
 const SCORE_DREADNAUGHT_DESTROYED = 1000;
 const SCORE_ALIVE_PILOT = 10_000;
 const SCORE_WOUNDED_PILOT = 8_000;
 
+function dreadnaughtDestroyedPoints() {
+  return SCORE_DREADNAUGHT_DESTROYED * getDifficultyMods().dreadnaughtDestroyedScore;
+}
+
 export function calculateFinalScore(outcome, pilotStatus) {
   if (outcome === "planetLost") return 0;
 
   let score = 0;
-  if (outcome === "destroyed") score += SCORE_DREADNAUGHT_DESTROYED;
+  if (outcome === "destroyed") score += dreadnaughtDestroyedPoints();
 
   for (const pilot of PILOTS) {
     const status = pilotStatus?.[pilot.id] ?? PILOT_STATUS.ALIVE;
@@ -26,7 +31,9 @@ export function formatScoreBreakdown(outcome, pilotStatus) {
 
   const lines = ["SCORE", ""];
   if (outcome === "destroyed") {
-    lines.push(`Dreadnaught destroyed     +${SCORE_DREADNAUGHT_DESTROYED.toLocaleString()}`);
+    const pts = dreadnaughtDestroyedPoints();
+    const mul = getDifficultyMods().dreadnaughtDestroyedScore;
+    lines.push(`Dreadnaught destroyed     +${pts.toLocaleString()} (${mul}x)`);
   }
 
   let alive = 0;

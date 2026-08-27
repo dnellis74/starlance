@@ -2,7 +2,6 @@ import Phaser from "../engine.js";
 import { keys, consume } from "../keys.js";
 import { MAX_PILOTS, PILOTS, formatPilotStatus } from "../data/pilots.js";
 import { formatScoreBreakdown } from "../scoring.js";
-import { setLaunchVisible } from "../ui.js";
 
 const COPY = {
   destroyed: {
@@ -51,7 +50,6 @@ export class ResultScene extends Phaser.Scene {
     };
     this.armed = false;
     this.leaving = false;
-    setLaunchVisible(true);
   }
 
   create() {

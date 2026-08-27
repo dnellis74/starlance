@@ -20,39 +20,3 @@ body {
 #game canvas {
   display: block;
 }
-
-#launch {
-  position: fixed;
-  left: 50%;
-  bottom: 7%;
-  transform: translateX(-50%);
-  z-index: 20;
-  min-width: 180px;
-  padding: 14px 36px;
-  border: 1px solid #5eead4;
-  border-radius: 2px;
-  background: linear-gradient(180deg, rgba(15, 118, 110, 0.35), rgba(2, 8, 23, 0.92));
-  color: #ccfbf1;
-  font: 600 17px/1 "Rajdhani", sans-serif;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  cursor: pointer;
-  box-shadow:
-    0 0 0 1px rgba(45, 212, 191, 0.15),
-    0 0 28px rgba(45, 212, 191, 0.18);
-  transition:
-    color 160ms ease,
-    box-shadow 160ms ease,
-    background 160ms ease;
-}
-
-#launch:hover {
-  color: #f0fdfa;
-  box-shadow:
-    0 0 0 1px rgba(94, 234, 212, 0.35),
-    0 0 40px rgba(45, 212, 191, 0.32);
-}
-
-#launch[hidden] {
-  display: none;
-}

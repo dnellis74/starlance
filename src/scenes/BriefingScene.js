@@ -1,6 +1,5 @@
 import Phaser from "../engine.js";
 import { keys, consume } from "../keys.js";
-import { setLaunchVisible } from "../ui.js";
 
 const DISPLAY = "Orbitron, sans-serif";
 const BODY = "Rajdhani, sans-serif";
@@ -28,7 +27,6 @@ export class BriefingScene extends Phaser.Scene {
     const { width: w, height: h } = this.scale;
     this.leaving = false;
     this.armed = false;
-    setLaunchVisible(false);
 
     this.add.rectangle(w / 2, h / 2, w, h, 0x02040a);
     this.drawStars(w, h);

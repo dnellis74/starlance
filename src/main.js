@@ -35,22 +35,3 @@ const config = {
 
 const game = new Phaser.Game(config);
 window.game = game;
-
-function launchFromDom(event) {
-  event.preventDefault();
-  event.stopPropagation();
-  if (game.scene.isActive("PlayScene")) return;
-  if (game.scene.isActive("BriefingScene")) {
-    game.scene.getScene("BriefingScene").advance();
-    return;
-  }
-  if (game.scene.isActive("ResultScene")) {
-    game.scene.start("MenuScene");
-    return;
-  }
-  const menu = game.scene.getScene("MenuScene");
-  menu.startGame();
-}
-
-document.getElementById("launch")?.addEventListener("click", launchFromDom);
-document.getElementById("launch")?.addEventListener("pointerup", launchFromDom);
