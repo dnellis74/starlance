@@ -57,6 +57,7 @@ export class PlayScene extends Phaser.Scene {
     this.invuln = 2200;
     this.transitioning = false;
     this.compSprites = new Map();
+    this.engineThrusters = new Map();
     this.compGroup = this.physics.add.staticGroup();
     this.lasers = this.physics.add.group();
     this.bombs = this.physics.add.group();
@@ -189,13 +190,7 @@ export class PlayScene extends Phaser.Scene {
       this.add.rectangle(cx, y, w, sliceH, shade).setDepth(2);
     }
 
-    const glow = this.add.graphics().setDepth(4);
-    glow.setPosition(cx, dn.sternY);
-    glow.fillStyle(0xf59e0b, 0.55);
-    for (let i = 0; i < 4; i += 1) {
-      const x = -W * 0.38 + i * ((W * 0.76) / 3);
-      glow.fillRect(x - 18, -18, 36, 26);
-    }
+    this.spawnEngineThrusters(dn);
 
     this.add
       .text(cx, dn.sternY + 36, dn.name.toUpperCase(), {
@@ -205,6 +200,23 @@ export class PlayScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0)
       .setDepth(5);
+  }
+
+  spawnEngineThrusters(dn) {
+    for (const engine of dn.components.filter((c) => c.kind === "engine")) {
+      const outer = this.add.rectangle(engine.x, dn.sternY, 36, 26, 0xf59e0b, 0.55);
+      outer.setDepth(4);
+      const core = this.add.rectangle(engine.x, dn.sternY, 20, 14, 0xfbbf24, 0.65);
+      core.setDepth(4);
+      this.engineThrusters.set(engine.id, { outer, core });
+    }
+  }
+
+  darkenEngineThruster(engineId) {
+    const thruster = this.engineThrusters.get(engineId);
+    if (!thruster) return;
+    thruster.outer.setFillStyle(0x334155, 0.3);
+    thruster.core.setFillStyle(0x1e293b, 0.2);
   }
 
   spawnComponents(dn) {
@@ -232,6 +244,7 @@ export class PlayScene extends Phaser.Scene {
       sprite.setTexture(`comp-${component.kind}-dead`);
       sprite.disableBody(true, false);
       sprite.setAlpha(0.55);
+      if (component.kind === "engine") this.darkenEngineThruster(id);
     } else {
       this.tweens.add({
         targets: sprite,

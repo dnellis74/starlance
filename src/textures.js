@@ -57,6 +57,11 @@ export function generateTextures(scene) {
       drawSilo(scene, `comp-${kind}-dead`, spec.w, spec.h, true);
       continue;
     }
+    if (kind === "engine") {
+      drawEngine(scene, `comp-${kind}`, spec.w, spec.h, false);
+      drawEngine(scene, `comp-${kind}-dead`, spec.w, spec.h, true);
+      continue;
+    }
     rect(scene, `comp-${kind}`, spec.w, spec.h, spec.color, (g) => {
       g.fillStyle(0x0b1220, 1);
       g.fillRoundedRect(0, 0, spec.w, spec.h, 4);
@@ -327,6 +332,168 @@ function drawHazardRing(g, cx, cy, outerR, innerR, dead) {
     g.closePath();
     g.fillPath();
   }
+}
+
+function drawPipePath(g, width, outer, mid, glow, segments) {
+  g.lineStyle(width, outer, 1);
+  g.beginPath();
+  g.moveTo(segments[0].x, segments[0].y);
+  for (let i = 1; i < segments.length; i += 1) {
+    const seg = segments[i];
+    if (seg.arc) {
+      g.arc(seg.cx, seg.cy, seg.r, seg.start, seg.end, seg.ccw ?? false);
+    } else {
+      g.lineTo(seg.x, seg.y);
+    }
+  }
+  g.strokePath();
+
+  g.lineStyle(Math.max(2, width - 5), mid, 1);
+  g.beginPath();
+  g.moveTo(segments[0].x, segments[0].y);
+  for (let i = 1; i < segments.length; i += 1) {
+    const seg = segments[i];
+    if (seg.arc) {
+      g.arc(seg.cx, seg.cy, seg.r, seg.start, seg.end, seg.ccw ?? false);
+    } else {
+      g.lineTo(seg.x, seg.y);
+    }
+  }
+  g.strokePath();
+
+  if (glow) {
+    g.lineStyle(2, glow, 0.85);
+    g.beginPath();
+    g.moveTo(segments[0].x, segments[0].y);
+    for (let i = 1; i < segments.length; i += 1) {
+      const seg = segments[i];
+      if (seg.arc) {
+        g.arc(seg.cx, seg.cy, seg.r, seg.start, seg.end, seg.ccw ?? false);
+      } else {
+        g.lineTo(seg.x, seg.y);
+      }
+    }
+    g.strokePath();
+  }
+}
+
+function drawPipeFlange(g, x, y, r, outer, inner, dead) {
+  g.fillStyle(outer, 1);
+  g.fillCircle(x, y, r);
+  g.fillStyle(inner, 1);
+  g.fillCircle(x, y, r - 2);
+  if (!dead) {
+    g.fillStyle(0x94a3b8, 1);
+    g.fillCircle(x - 1, y - 1, 1);
+  }
+  g.lineStyle(1, dead ? 0x111827 : 0x020617, 1);
+  g.strokeCircle(x, y, r);
+}
+
+function drawEngine(scene, key, w, h, dead) {
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  const outer = dead ? 0x374151 : 0x57534e;
+  const mid = dead ? 0x4b5563 : 0x78716c;
+  const glow = dead ? null : 0xf59e0b;
+  const glowHot = dead ? null : 0xfbbf24;
+  const frame = dead ? 0x1f2937 : 0x1e293b;
+  const frameHi = dead ? 0x374151 : 0x334155;
+
+  // Mounting plate and central pipe rack.
+  g.fillStyle(dead ? 0x111827 : 0x0f172a, 1);
+  g.fillRect(2, h - 5, w - 4, 5);
+  g.fillStyle(frame, 1);
+  g.fillRoundedRect(16, 10, 24, h - 16, 4);
+  g.fillStyle(frameHi, 1);
+  g.fillRoundedRect(18, 12, 20, h - 20, 3);
+  g.fillStyle(dead ? 0x111827 : 0x020617, 1);
+  g.fillRect(20, 14, 16, 8);
+  g.fillRect(22, 24, 12, 6);
+
+  // Left pipe — snakes up the rack, curls over, exits toward the stern.
+  drawPipePath(g, 9, outer, mid, glow, [
+    { x: 8, y: h - 4 },
+    { x: 8, y: 26 },
+    { arc: true, cx: 14, cy: 26, r: 6, start: Math.PI, end: Math.PI * 1.5, ccw: false },
+    { x: 22, y: 20 },
+    { arc: true, cx: 22, cy: 14, r: 6, start: Math.PI / 2, end: 0, ccw: true },
+    { x: 34, y: 8 },
+    { x: w - 6, y: 8 },
+  ]);
+  drawPipeFlange(g, 8, h - 6, 5, outer, mid, dead);
+  drawPipeFlange(g, 22, 20, 4, outer, mid, dead);
+  drawPipeFlange(g, 34, 8, 4, outer, mid, dead);
+
+  // Right pipe — double bend weaving behind the rack.
+  drawPipePath(g, 8, outer, mid, glowHot, [
+    { x: w - 8, y: h - 4 },
+    { x: w - 8, y: 30 },
+    { arc: true, cx: w - 14, cy: 30, r: 6, start: 0, end: Math.PI / 2, ccw: false },
+    { x: w - 20, y: 24 },
+    { arc: true, cx: w - 26, cy: 24, r: 6, start: 0, end: Math.PI, ccw: false },
+    { x: w - 32, y: 30 },
+    { arc: true, cx: w - 32, cy: 36, r: 6, start: Math.PI * 1.5, end: Math.PI, ccw: false },
+    { x: w - 38, y: h - 4 },
+  ]);
+  drawPipeFlange(g, w - 8, h - 6, 5, outer, mid, dead);
+  drawPipeFlange(g, w - 20, 24, 4, outer, mid, dead);
+  drawPipeFlange(g, w - 32, 30, 4, outer, mid, dead);
+
+  // Foreground cross-pipe — tight S-curve across the face of the building.
+  drawPipePath(g, 7, outer, mid, glow, [
+    { x: 12, y: h - 8 },
+    { arc: true, cx: 18, cy: h - 8, r: 6, start: Math.PI, end: Math.PI / 2, ccw: true },
+    { x: 24, y: h - 14 },
+    { arc: true, cx: 30, cy: h - 14, r: 6, start: Math.PI * 1.5, end: 0, ccw: false },
+    { x: 36, y: h - 8 },
+    { arc: true, cx: 42, cy: h - 8, r: 6, start: Math.PI, end: Math.PI / 2, ccw: true },
+    { x: 48, y: h - 14 },
+  ]);
+  drawPipeFlange(g, 12, h - 8, 4, outer, mid, dead);
+  drawPipeFlange(g, 36, h - 8, 4, outer, mid, dead);
+  drawPipeFlange(g, 48, h - 14, 4, outer, mid, dead);
+
+  // Small vertical feeder pipes into the rack.
+  g.fillStyle(outer, 1);
+  g.fillRect(24, 6, 5, 8);
+  g.fillRect(31, 6, 5, 8);
+  g.fillStyle(mid, 1);
+  g.fillRect(25, 7, 3, 6);
+  g.fillRect(32, 7, 3, 6);
+  if (!dead) {
+    g.fillStyle(0xf97316, 0.7);
+    g.fillRect(26, 8, 1, 4);
+    g.fillRect(33, 8, 1, 4);
+  }
+
+  // Rivets and wear on the rack face.
+  g.fillStyle(dead ? 0x111827 : 0x475569, 1);
+  for (const y of [16, 22, 28]) {
+    g.fillCircle(17, y, 1.5);
+    g.fillCircle(w - 17, y, 1.5);
+  }
+
+  if (dead) {
+    g.lineStyle(1, 0x111827, 0.9);
+    g.lineBetween(19, 15, 27, 21);
+    g.lineBetween(28, 14, 36, 20);
+    g.lineBetween(24, 28, 32, 32);
+    g.fillStyle(0x111827, 0.45);
+    g.fillCircle(26, 18, 3);
+    g.fillCircle(w - 24, 28, 2);
+  } else {
+    // Heat shimmer on the hottest bend.
+    g.fillStyle(0xfbbf24, 0.35);
+    g.fillCircle(34, 8, 3);
+    g.fillStyle(0xf59e0b, 0.25);
+    g.fillCircle(w - 20, 24, 4);
+  }
+
+  g.lineStyle(1, dead ? 0x111827 : 0x020617, 1);
+  g.strokeRoundedRect(16, 10, 24, h - 16, 4);
+
+  g.generateTexture(key, w, h);
+  g.destroy();
 }
 
 function drawSilo(scene, key, w, h, dead) {
