@@ -6,13 +6,17 @@ const DISPLAY = "Orbitron, sans-serif";
 const BODY = "Rajdhani, sans-serif";
 
 const ORDERS = [
-  "Mission Briefing:",
-  "",
   "An enemy capital ship has broken the lines.",
   "All that stands between it and the home planet",
   "is your squadron of light fighters.",
   "",
-  "Good luck!",
+  "BOMBING PRIORITIES",
+  "",
+  "• Destroy all BRIDGES to reduce Dreadnaught firing rate by 50 percent.",
+  "• Destroy each ENGINE to slow the Dreadnaught's approach velocity.",
+  "• SILOS house anti-matter missiles which can detonate the",
+  "  Unstable Energy Field. Destroy them.",
+  "• In order to destroy a Dreadnaught, bomb all ENERGY VENTS.",
 ].join("\n");
 
 export class BriefingScene extends Phaser.Scene {
@@ -29,11 +33,11 @@ export class BriefingScene extends Phaser.Scene {
     this.add.rectangle(w / 2, h / 2, w, h, 0x02040a);
     this.drawStars(w, h);
 
-    const panel = this.add.rectangle(w / 2, h / 2 - 10, w * 0.78, h * 0.62, 0x071018, 0.92);
+    const panel = this.add.rectangle(w / 2, h / 2 - 10, w * 0.78, h * 0.72, 0x071018, 0.92);
     panel.setStrokeStyle(1, 0x2dd4bf, 0.35);
 
     this.add
-      .text(w / 2, h * 0.12, "ORDERS · TRANSMISSION", {
+      .text(w / 2, h * 0.12, "MISSION BRIEFING · TRANSMISSION", {
         fontFamily: DISPLAY,
         fontSize: "13px",
         color: "#5eead4",
@@ -43,13 +47,13 @@ export class BriefingScene extends Phaser.Scene {
       .setAlpha(0.9);
 
     const body = this.add
-      .text(w / 2, h / 2 - 8, ORDERS, {
+      .text(w / 2, h / 2 - 4, ORDERS, {
         fontFamily: DISPLAY,
-        fontSize: "17px",
+        fontSize: "15px",
         color: "#e2e8f0",
-        align: "center",
-        lineSpacing: 8,
-        wordWrap: { width: w * 0.7 },
+        align: "left",
+        lineSpacing: 6,
+        wordWrap: { width: w * 0.66 },
       })
       .setOrigin(0.5)
       .setAlpha(0);

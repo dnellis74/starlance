@@ -31,7 +31,7 @@ export const KINDS = {
     score: 150,
     w: 28,
     h: 28,
-    color: 0xa78bfa,
+    color: 0xe2e8f0,
   },
   silo: {
     label: "Missile silo",
@@ -40,7 +40,7 @@ export const KINDS = {
     score: 500,
     w: 40,
     h: 40,
-    color: 0xf43f5e,
+    color: 0x475569,
   },
   cannon: {
     label: "Rocket cannon",
@@ -49,7 +49,7 @@ export const KINDS = {
     score: 80,
     w: 30,
     h: 24,
-    color: 0xfb7185,
+    color: 0x84cc16,
     fires: "bolt",
   },
   launcher: {
@@ -59,7 +59,7 @@ export const KINDS = {
     score: 120,
     w: 32,
     h: 26,
-    color: 0xfb923c,
+    color: 0x22c55e,
     fires: "missile",
   },
   tower: {
@@ -69,7 +69,7 @@ export const KINDS = {
     score: 100,
     w: 26,
     h: 34,
-    color: 0x34d399,
+    color: 0x38bdf8,
     fires: "bolt",
   },
 };

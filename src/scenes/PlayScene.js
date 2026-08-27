@@ -5,7 +5,6 @@ import { setLaunchVisible } from "../ui.js";
 import {
   createGameState,
   damageComponent,
-  advanceDreadnaught,
   beginRun,
   applyDamage,
   hudSnapshot,
@@ -102,7 +101,7 @@ export class PlayScene extends Phaser.Scene {
     this.cameras.main.setDeadzone(28, 48);
 
     this.buildHud();
-    beginRun(this.state);
+    beginRun(this.state, { advance: false });
     this.refreshHud();
     this.flashBanner(this.attackPassLabel());
     this.startBgm();
@@ -260,6 +259,10 @@ export class PlayScene extends Phaser.Scene {
 
     this.time.delayedCall(1500, () => {
       beginRun(this.state, { nextFighter: true });
+      if (this.state.outcome) {
+        this.endRun();
+        return;
+      }
       const dn = this.state.dreadnaught;
       this.ship.setPosition(dn.centerX, dn.tipY + dn.approachLead - SPAWN_MARGIN);
       this.speed = START_SPEED;
@@ -449,17 +452,15 @@ export class PlayScene extends Phaser.Scene {
     if (this.ship.y > this.state.dreadnaught.sternY - 50) return;
     this.transitioning = true;
     this.ship.setVelocity(0, 0);
+    this.clearProjectiles();
 
-    // Deviation: fade and snap back below the tip instead of a separate re-approach cinematic.
-    advanceDreadnaught(this.state);
+    beginRun(this.state);
     this.refreshHud();
 
     if (this.state.outcome) {
       this.endRun();
       return;
     }
-
-    beginRun(this.state);
 
     this.cameras.main.fadeOut(220, 5, 8, 16);
     this.cameras.main.once("camerafadeoutcomplete", () => {

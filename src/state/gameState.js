@@ -12,10 +12,9 @@ export const SKILLS = {
     id: "standard",
     name: "Standard",
     maxDamage: 100,
-    maxRange: 7,
-    baseAdvance: 1,
-    engineSlowPerKill: 0.18,
-    minAdvance: 0.28,
+    maxRange: 80,
+    initialCruiserSpeed: 10,
+    engineSpeedPenalty: 2,
     fireIntervalMs: 1400,
   },
 };
@@ -30,6 +29,7 @@ export function createGameState(skillId = "standard") {
     damage: skill.maxDamage,
     pass: 0,
     range: skill.maxRange,
+    cruiserSpeed: skill.initialCruiserSpeed,
     skill,
     outcome: null,
     fireRateMul: 1,
@@ -71,14 +71,18 @@ export function syncDerivedState(state) {
   };
 }
 
-export function advanceDreadnaught(state) {
-  const totalEngines = countKind(state.dreadnaught, "engine");
-  const enginesDestroyed = totalEngines - countAlive(state.dreadnaught, "engine");
-  const step = Math.max(
-    state.skill.minAdvance,
-    state.skill.baseAdvance - enginesDestroyed * state.skill.engineSlowPerKill,
+export function cruiserSpeed(state) {
+  const enginesDestroyed =
+    countKind(state.dreadnaught, "engine") - countAlive(state.dreadnaught, "engine");
+  return Math.max(
+    0,
+    state.skill.initialCruiserSpeed - enginesDestroyed * state.skill.engineSpeedPenalty,
   );
-  state.range = Math.max(0, +(state.range - step).toFixed(2));
+}
+
+export function advanceCruiser(state) {
+  state.cruiserSpeed = cruiserSpeed(state);
+  state.range = Math.max(0, +(state.range - state.cruiserSpeed).toFixed(2));
 
   if (state.range <= 0) {
     if (countAlive(state.dreadnaught, "silo") === 0) {
@@ -101,10 +105,15 @@ export function resetRunHealth(state) {
 }
 
 /** Start a new run — always bumps attack pass; optionally swaps in the next fighter. */
-export function beginRun(state, { nextFighter = false } = {}) {
+export function beginRun(state, { nextFighter = false, advance = true } = {}) {
+  if (advance) {
+    advanceCruiser(state);
+    if (state.outcome) return state.outcome;
+  }
   state.pass += 1;
   if (nextFighter) state.fighter += 1;
   resetRunHealth(state);
+  return state.outcome;
 }
 
 export function hudSnapshot(state) {
@@ -116,6 +125,7 @@ export function hudSnapshot(state) {
     pass: state.pass,
     range: state.range,
     maxRange: state.skill.maxRange,
+    cruiserSpeed: state.cruiserSpeed,
     vents: countAlive(state.dreadnaught, "vent"),
     ventsMax: countKind(state.dreadnaught, "vent"),
     silos: countAlive(state.dreadnaught, "silo"),
