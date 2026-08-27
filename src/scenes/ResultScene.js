@@ -28,6 +28,8 @@ export class ResultScene extends Phaser.Scene {
 
   init(data) {
     this.result = data ?? { outcome: "gameOver", score: 0, pass: 1 };
+    this.armed = false;
+    this.leaving = false;
     setLaunchVisible(true);
   }
 
@@ -81,11 +83,30 @@ export class ResultScene extends Phaser.Scene {
     this.add
       .rectangle(width / 2, height / 2, width, height, 0x000000, 0)
       .setInteractive({ useHandCursor: true })
-      .on("pointerup", () => this.scene.start("MenuScene"));
-    this.input.keyboard?.once("keydown-ENTER", () => this.scene.start("MenuScene"));
+      .on("pointerup", () => this.returnToMenu());
+
+    // Ignore fire keys still held from the final strike.
+    this.time.delayedCall(800, () => {
+      this.armed = true;
+      keys.z = false;
+      keys.x = false;
+      keys.space = false;
+      keys.shift = false;
+      keys.enter = false;
+    });
   }
 
   update() {
-    if (consume("enter") || consume("space")) this.scene.start("MenuScene");
+    if (!this.armed) return;
+    if (consume("enter")) this.returnToMenu();
+  }
+
+  returnToMenu() {
+    if (!this.armed || this.leaving) return;
+    this.leaving = true;
+    keys.enter = false;
+    keys.space = false;
+    keys.z = false;
+    this.scene.start("MenuScene");
   }
 }

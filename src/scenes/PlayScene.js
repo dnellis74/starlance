@@ -56,6 +56,7 @@ export class PlayScene extends Phaser.Scene {
     this.bombCd = 0;
     this.invuln = 2200;
     this.transitioning = false;
+    this.endingRun = false;
     this.compSprites = new Map();
     this.engineThrusters = new Map();
     this.compGroup = this.physics.add.staticGroup();
@@ -506,8 +507,15 @@ export class PlayScene extends Phaser.Scene {
   }
 
   endRun() {
+    if (this.endingRun) return;
+    this.endingRun = true;
     this.transitioning = true;
     this.ship.setVelocity(0, 0);
+    this.clearProjectiles();
+    keys.z = false;
+    keys.x = false;
+    keys.space = false;
+    keys.shift = false;
     this.time.delayedCall(500, () => {
       this.scene.start("ResultScene", {
         outcome: this.state.outcome,
