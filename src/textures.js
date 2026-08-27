@@ -1,14 +1,9 @@
 import { KINDS } from "./data/kinds.js";
 
 export function generateTextures(scene) {
-  rect(scene, "ship", 42, 18, 0x7dd3fc, (g) => {
-    g.fillStyle(0x0ea5e9, 1);
-    g.fillTriangle(42, 9, 0, 0, 0, 18);
-    g.fillStyle(0xf8fafc, 1);
-    g.fillTriangle(28, 9, 6, 5, 6, 13);
-    g.fillStyle(0x38bdf8, 1);
-    g.fillRect(2, 7, 8, 4);
-  });
+  drawShip(scene, "ship", 42, 18);
+  drawShipFlames(scene);
+  createShipFlameAnim(scene);
 
   rect(scene, "laser", 14, 3, 0x67e8f9);
   rect(scene, "bomb", 10, 10, 0xfbbf24, (g) => {
@@ -381,6 +376,51 @@ function drawSilo(scene, key, w, h, dead) {
 
   g.generateTexture(key, w, h);
   g.destroy();
+}
+
+function drawShip(scene, key, w, h) {
+  const g = scene.make.graphics({ x: 0, y: 0, add: false });
+  g.fillStyle(0x0ea5e9, 1);
+  g.fillTriangle(42, 9, 0, 0, 0, 18);
+  g.fillStyle(0xf8fafc, 1);
+  g.fillTriangle(28, 9, 6, 5, 6, 13);
+  g.fillStyle(0x38bdf8, 1);
+  g.fillRect(2, 7, 8, 4);
+  g.generateTexture(key, w, h);
+  g.destroy();
+}
+
+const SHIP_FLAME_FRAMES = [
+  { h: 14, outer: 0xf97316, mid: 0xfbbf24, core: 0xfef08a },
+  { h: 17, outer: 0xea580c, mid: 0xf97316, core: 0xffffff },
+  { h: 13, outer: 0xfb923c, mid: 0xfacc15, core: 0xfef9c3 },
+  { h: 16, outer: 0xf97316, mid: 0xfde047, core: 0xfff7ed },
+];
+
+function drawShipFlames(scene) {
+  const w = 12;
+  SHIP_FLAME_FRAMES.forEach((frame, i) => {
+    const g = scene.make.graphics({ x: 0, y: 0, add: false });
+    const { h, outer, mid, core } = frame;
+    g.fillStyle(outer, 1);
+    g.fillTriangle(w / 2, h, 0, 0, w, 0);
+    g.fillStyle(mid, 1);
+    g.fillTriangle(w / 2, h - 2, 1, 1, w - 1, 1);
+    g.fillStyle(core, 1);
+    g.fillTriangle(w / 2, h - 5, 3, 3, w - 3, 3);
+    g.generateTexture(`ship-flame-${i}`, w, h);
+    g.destroy();
+  });
+}
+
+export function createShipFlameAnim(scene) {
+  if (scene.anims.exists("ship-flame")) return;
+  scene.anims.create({
+    key: "ship-flame",
+    frames: SHIP_FLAME_FRAMES.map((_, i) => ({ key: `ship-flame-${i}` })),
+    frameRate: 14,
+    repeat: -1,
+  });
 }
 
 function rect(scene, key, w, h, color, extra) {

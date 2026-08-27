@@ -80,6 +80,10 @@ export class PlayScene extends Phaser.Scene {
     this.ship.body.setSize(14, 36);
     this.ship.setCollideWorldBounds(true);
 
+    this.flame = this.add.sprite(this.ship.x, this.ship.y + 20, "ship-flame-0");
+    this.flame.setDepth(19);
+    this.flame.play("ship-flame");
+
     this.physics.add.overlap(this.lasers, this.missiles, (laser, missile) => {
       laser.destroy();
       missile.destroy();
@@ -137,7 +141,10 @@ export class PlayScene extends Phaser.Scene {
     this.laserCd = Math.max(0, this.laserCd - delta);
     this.bombCd = Math.max(0, this.bombCd - delta);
     this.invuln = Math.max(0, this.invuln - delta);
-    this.ship.setAlpha(this.invuln > 0 && Math.floor(this.invuln / 80) % 2 === 0 ? 0.35 : 1);
+    const shipAlpha =
+      this.invuln > 0 && Math.floor(this.invuln / 80) % 2 === 0 ? 0.35 : 1;
+    this.ship.setAlpha(shipAlpha);
+    if (this.flame) this.flame.setAlpha(shipAlpha);
 
     this.updateShip();
     this.updateWeapons();
@@ -291,6 +298,14 @@ export class PlayScene extends Phaser.Scene {
     if (keys.left) vx = -STRAFE_SPEED;
     else if (keys.right) vx = STRAFE_SPEED;
     this.ship.setVelocityX(vx);
+    this.updateFlame();
+  }
+
+  updateFlame() {
+    if (!this.flame || !this.ship) return;
+    this.flame.setPosition(this.ship.x, this.ship.y + 20);
+    const thrust = (this.speed - MIN_SPEED) / (MAX_SPEED - MIN_SPEED);
+    this.flame.setScale(0.75 + thrust * 0.35, 0.55 + thrust * 0.85);
   }
 
   updateWeapons() {
