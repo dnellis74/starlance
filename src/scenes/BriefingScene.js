@@ -8,7 +8,7 @@ const BODY = "Rajdhani, sans-serif";
 const ORDERS = [
   "An enemy capital ship has broken the lines.",
   "All that stands between it and the home planet",
-  "is your squadron of light fighters.",
+  "is your lance — sixteen light fighters, one hull each.",
   "",
   "BOMBING PRIORITIES",
   "",

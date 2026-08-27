@@ -1,5 +1,7 @@
 import Phaser from "../engine.js";
-import { consume } from "../keys.js";
+import { keys, consume } from "../keys.js";
+import { MAX_PILOTS, PILOTS, formatPilotStatus } from "../data/pilots.js";
+import { formatScoreBreakdown } from "../scoring.js";
 import { setLaunchVisible } from "../ui.js";
 
 const COPY = {
@@ -16,10 +18,22 @@ const COPY = {
     body: "The dreadnaught closed the distance. The stargate is lost.",
   },
   gameOver: {
-    title: "INTERCEPTOR LOST",
-    body: "Your hull is gone. The dreadnaught continues its run.",
+    title: "LANCE LOST",
+    body: `All ${MAX_PILOTS} pilots of the lance are gone. The dreadnaught continues its run.`,
   },
 };
+
+function formatLanceReport(pilotDamage, pilotStatus) {
+  const lines = ["LANCE REPORT", ""];
+  for (const pilot of PILOTS) {
+    const dmg = pilotDamage?.[pilot.id] ?? 0;
+    const status = formatPilotStatus(pilotStatus?.[pilot.id] ?? "alive");
+    lines.push(
+      `F${String(pilot.id).padStart(2, "0")}  ${pilot.callsign.padEnd(9)} ${status.padEnd(8)} ${String(dmg).padStart(6)}`,
+    );
+  }
+  return lines.join("\n");
+}
 
 export class ResultScene extends Phaser.Scene {
   constructor() {
@@ -27,7 +41,14 @@ export class ResultScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.result = data ?? { outcome: "gameOver", score: 0, pass: 1 };
+    this.result = data ?? {
+      outcome: "gameOver",
+      damage: 0,
+      pass: 1,
+      fighter: 1,
+      pilotDamage: {},
+      pilotStatus: {},
+    };
     this.armed = false;
     this.leaving = false;
     setLaunchVisible(true);
@@ -40,9 +61,9 @@ export class ResultScene extends Phaser.Scene {
 
     this.add.rectangle(width / 2, height / 2, width, height, 0x05070c);
     this.add
-      .text(width / 2, height * 0.28, info.title, {
+      .text(width / 2, height * 0.1, info.title, {
         fontFamily: "Orbitron, sans-serif",
-        fontSize: "28px",
+        fontSize: "24px",
         color: win ? "#67e8f9" : "#fb7185",
         align: "center",
         wordWrap: { width: width * 0.86 },
@@ -50,9 +71,9 @@ export class ResultScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, height * 0.38, info.body, {
+      .text(width / 2, height * 0.16, info.body, {
         fontFamily: "Rajdhani, sans-serif",
-        fontSize: "18px",
+        fontSize: "14px",
         color: "#94a3b8",
         align: "center",
         wordWrap: { width: width * 0.82 },
@@ -60,20 +81,45 @@ export class ResultScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
+      .text(width / 2, height * 0.22, `Passes  ${this.result.pass}`, {
+        fontFamily: "monospace",
+        fontSize: "13px",
+        color: "#e2e8f0",
+      })
+      .setOrigin(0.5);
+
+    this.add
       .text(
         width / 2,
-        height * 0.5,
-        `Score  ${this.result.score}     Passes  ${this.result.pass}`,
+        height * 0.44,
+        formatLanceReport(this.result.pilotDamage, this.result.pilotStatus),
         {
           fontFamily: "monospace",
-          fontSize: "16px",
-          color: "#e2e8f0",
+          fontSize: "10px",
+          color: "#cbd5e1",
+          align: "left",
+          lineSpacing: 2,
         },
       )
       .setOrigin(0.5);
 
     this.add
-      .text(width / 2, height * 0.62, "ENTER  ·  fly another pass", {
+      .text(
+        width / 2,
+        height * 0.72,
+        formatScoreBreakdown(this.result.outcome, this.result.pilotStatus),
+        {
+          fontFamily: "monospace",
+          fontSize: "11px",
+          color: "#e2e8f0",
+          align: "left",
+          lineSpacing: 3,
+        },
+      )
+      .setOrigin(0.5);
+
+    this.add
+      .text(width / 2, height * 0.9, "ENTER  ·  fly another pass", {
         fontFamily: "Rajdhani, sans-serif",
         fontSize: "16px",
         color: "#38bdf8",

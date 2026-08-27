@@ -5,13 +5,20 @@ import {
   countAlive,
   countKind,
 } from "../data/dreadnaughts.js";
+import {
+  MAX_PILOTS,
+  PILOTS,
+  PILOT_STATUS,
+  pilotForIndex,
+  pilotsAvailable,
+} from "../data/pilots.js";
 
 /** MVP: a single selectable skill. Extra skills can be added as more records. */
 export const SKILLS = {
   standard: {
     id: "standard",
     name: "Standard",
-    maxDamage: 100,
+    maxHull: 100,
     maxRange: 80,
     initialCruiserSpeed: 10,
     engineSpeedPenalty: 2,
@@ -19,14 +26,20 @@ export const SKILLS = {
   },
 };
 
+function createPilotStatus() {
+  return Object.fromEntries(PILOTS.map((p) => [p.id, PILOT_STATUS.ALIVE]));
+}
+
 export function createGameState(skillId = "standard") {
   const skill = SKILLS[skillId] ?? SKILLS.standard;
   const dreadnaught = instantiateDreadnaught(LEVIATHAN);
 
   return {
-    score: 0,
+    damage: 0,
+    pilotDamage: Object.fromEntries(PILOTS.map((p) => [p.id, 0])),
+    pilotStatus: createPilotStatus(),
     fighter: 1,
-    damage: skill.maxDamage,
+    hull: skill.maxHull,
     pass: 0,
     range: skill.maxRange,
     cruiserSpeed: skill.initialCruiserSpeed,
@@ -37,6 +50,52 @@ export function createGameState(skillId = "standard") {
   };
 }
 
+export function currentPilot(state) {
+  return pilotForIndex(state.fighter);
+}
+
+export function pilotStatus(state, pilotId) {
+  return state.pilotStatus[pilotId] ?? PILOT_STATUS.ALIVE;
+}
+
+export function assignRunPilot(state) {
+  state.fighter = ((state.pass - 1) % MAX_PILOTS) + 1;
+}
+
+export function woundPilot(state) {
+  const pilot = currentPilot(state);
+  if (!pilot) return;
+  if (state.pilotStatus[pilot.id] === PILOT_STATUS.ALIVE) {
+    state.pilotStatus[pilot.id] = PILOT_STATUS.WOUNDED;
+  }
+}
+
+export function killPilot(state) {
+  const pilot = currentPilot(state);
+  if (pilot) state.pilotStatus[pilot.id] = PILOT_STATUS.KIA;
+}
+
+function checkLanceLost(state) {
+  if (pilotsAvailable(state.pilotStatus) === 0) {
+    state.outcome = "gameOver";
+    return true;
+  }
+  const pilot = currentPilot(state);
+  if (pilot && state.pilotStatus[pilot.id] === PILOT_STATUS.KIA) {
+    state.outcome = "gameOver";
+    return true;
+  }
+  return false;
+}
+
+export function addDamage(state, amount) {
+  state.damage += amount;
+  const pilot = currentPilot(state);
+  if (pilot) {
+    state.pilotDamage[pilot.id] = (state.pilotDamage[pilot.id] ?? 0) + amount;
+  }
+}
+
 export function damageComponent(state, componentId) {
   const component = state.dreadnaught.components.find((c) => c.id === componentId);
   if (!component || !component.alive) return null;
@@ -45,7 +104,7 @@ export function damageComponent(state, componentId) {
   if (component.hp > 0) return { destroyed: false, component };
 
   component.alive = false;
-  state.score += KINDS[component.kind].score;
+  addDamage(state, KINDS[component.kind].damage);
   const effects = syncDerivedState(state);
   return { destroyed: true, component, effects };
 }
@@ -59,7 +118,6 @@ export function syncDerivedState(state) {
 
   if (vents === 0) {
     state.outcome = "destroyed";
-    state.score += 5000;
   }
 
   return {
@@ -87,7 +145,6 @@ export function advanceCruiser(state) {
   if (state.range <= 0) {
     if (countAlive(state.dreadnaught, "silo") === 0) {
       state.outcome = "neutralized";
-      state.score += 3500;
     } else {
       state.outcome = "planetLost";
     }
@@ -96,32 +153,39 @@ export function advanceCruiser(state) {
   return state.outcome;
 }
 
-export function applyDamage(state, amount) {
-  state.damage = Math.max(0, state.damage - amount);
+export function applyHullDamage(state, amount) {
+  state.hull = Math.max(0, state.hull - amount);
 }
 
-export function resetRunHealth(state) {
-  state.damage = state.skill.maxDamage;
+export function resetRunHull(state) {
+  state.hull = state.skill.maxHull;
 }
 
-/** Start a new run — always bumps attack pass; optionally swaps in the next fighter. */
-export function beginRun(state, { nextFighter = false, advance = true } = {}) {
+/** Start a new run — advances pass, rotates pilot, optionally advances the dreadnaught. */
+export function beginRun(state, { advance = true } = {}) {
   if (advance) {
     advanceCruiser(state);
     if (state.outcome) return state.outcome;
   }
   state.pass += 1;
-  if (nextFighter) state.fighter += 1;
-  resetRunHealth(state);
+  assignRunPilot(state);
+  if (checkLanceLost(state)) return state.outcome;
+  resetRunHull(state);
   return state.outcome;
 }
 
 export function hudSnapshot(state) {
+  const pilot = currentPilot(state);
+  const status = pilot ? pilotStatus(state, pilot.id) : PILOT_STATUS.ALIVE;
   return {
-    score: state.score,
-    fighter: state.fighter,
     damage: state.damage,
-    maxDamage: state.skill.maxDamage,
+    fighter: state.fighter,
+    callsign: pilot?.callsign ?? "—",
+    pilotStatus: status,
+    pilotsLeft: pilotsAvailable(state.pilotStatus),
+    pilotsMax: MAX_PILOTS,
+    hull: state.hull,
+    maxHull: state.skill.maxHull,
     pass: state.pass,
     range: state.range,
     maxRange: state.skill.maxRange,

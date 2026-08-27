@@ -1,13 +1,19 @@
 import Phaser from "../engine.js";
 import { keys } from "../keys.js";
+import { formatPilotStatus } from "../data/pilots.js";
 import { WEAPON } from "../data/kinds.js";
 import { setLaunchVisible } from "../ui.js";
 import {
   createGameState,
   damageComponent,
   beginRun,
-  applyDamage,
+  applyHullDamage,
+  addDamage,
   hudSnapshot,
+  currentPilot,
+  woundPilot,
+  killPilot,
+  pilotStatus,
 } from "../state/gameState.js";
 
 // Portrait canvas — tall phone layout; primary scroll is bottom → top.
@@ -89,7 +95,7 @@ export class PlayScene extends Phaser.Scene {
     this.physics.add.overlap(this.lasers, this.missiles, (laser, missile) => {
       laser.destroy();
       missile.destroy();
-      this.state.score += 25;
+      addDamage(this.state, 25);
       this.refreshHud();
     });
     this.physics.add.overlap(this.lasers, this.compGroup, (laser, sprite) => {
@@ -109,7 +115,7 @@ export class PlayScene extends Phaser.Scene {
     this.buildHud();
     beginRun(this.state, { advance: false });
     this.refreshHud();
-    this.flashBanner(this.attackPassLabel());
+    this.showRunIntro();
     this.startBgm();
     this.events.once("shutdown", () => this.stopBgm());
   }
@@ -264,11 +270,12 @@ export class PlayScene extends Phaser.Scene {
     if (this.invuln > 0 || this.transitioning) return;
     shot.destroy();
     this.playHitSfx();
-    applyDamage(this.state, amount);
+    applyHullDamage(this.state, amount);
+    woundPilot(this.state);
     this.invuln = 1400;
     this.cameras.main.shake(180, 0.01);
     this.refreshHud();
-    if (this.state.damage <= 0) this.fighterDestroyed();
+    if (this.state.hull <= 0) this.fighterDestroyed();
   }
 
   fighterDestroyed() {
@@ -276,10 +283,12 @@ export class PlayScene extends Phaser.Scene {
     this.transitioning = true;
     this.ship.setVelocity(0, 0);
     this.clearProjectiles();
-    this.flashBanner("FIGHTER DESTROYED", 1200);
+    const lost = currentPilot(this.state);
+    this.flashBanner(lost ? `${lost.callsign.toUpperCase()} · KIA` : "FIGHTER DESTROYED", 1200);
 
     this.time.delayedCall(1500, () => {
-      beginRun(this.state, { nextFighter: true });
+      killPilot(this.state);
+      beginRun(this.state);
       if (this.state.outcome) {
         this.endRun();
         return;
@@ -289,7 +298,7 @@ export class PlayScene extends Phaser.Scene {
       this.speed = START_SPEED;
       this.invuln = 2200;
       this.refreshHud();
-      this.flashBanner(this.attackPassLabel(), 1000);
+      this.showRunIntro(1000);
       this.transitioning = false;
     });
   }
@@ -498,12 +507,37 @@ export class PlayScene extends Phaser.Scene {
       this.speed = START_SPEED;
       this.cameras.main.fadeIn(280, 5, 8, 16);
       this.transitioning = false;
-      this.flashBanner(this.attackPassLabel());
+      this.showRunIntro();
     });
   }
 
-  attackPassLabel() {
-    return `ATTACK PASS ${this.state.pass} · FIGHTER ${this.state.fighter}`;
+  showRunIntro(holdMs = 1400) {
+    const pilot = currentPilot(this.state);
+    const status = pilot ? formatPilotStatus(pilotStatus(this.state, pilot.id)) : "";
+    const header = `PASS ${this.state.pass}  ·  FIGHTER ${this.state.fighter}`;
+    const body = pilot
+      ? `${pilot.name}\n${pilot.origin}  ·  ${pilot.callsign.toUpperCase()}  ·  ${status}`
+      : "";
+    const msg = body ? `${header}\n${body}` : header;
+
+    const t = this.add
+      .text(VIEW_W / 2, 108, msg, {
+        fontFamily: "Orbitron, sans-serif",
+        fontSize: "15px",
+        color: "#f8fafc",
+        align: "center",
+        lineSpacing: 6,
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(60);
+    this.tweens.add({
+      targets: t,
+      alpha: 0,
+      delay: holdMs,
+      duration: 400,
+      onComplete: () => t.destroy(),
+    });
   }
 
   endRun() {
@@ -519,8 +553,11 @@ export class PlayScene extends Phaser.Scene {
     this.time.delayedCall(500, () => {
       this.scene.start("ResultScene", {
         outcome: this.state.outcome,
-        score: this.state.score,
+        damage: this.state.damage,
         pass: this.state.pass,
+        fighter: this.state.fighter,
+        pilotDamage: { ...this.state.pilotDamage },
+        pilotStatus: { ...this.state.pilotStatus },
       });
     });
   }
@@ -549,8 +586,9 @@ export class PlayScene extends Phaser.Scene {
   refreshHud() {
     const h = hudSnapshot(this.state);
     const fire = h.fireRateMul < 1 ? "BRIDGES DOWN · 50% fire" : "bridges intact";
+    const status = formatPilotStatus(h.pilotStatus);
     this.hudText.setText(
-      `SCORE ${String(h.score).padStart(6, "0")}  F${h.fighter}  DAMAGE ${h.damage}/${h.maxDamage}  PASS ${h.pass}  RANGE ${h.range.toFixed(1)}/${h.maxRange}\n` +
+      `DMG ${String(h.damage).padStart(6, "0")}  ${h.callsign.toUpperCase()}  ${status}  LANCE ${h.pilotsLeft}/${h.pilotsMax}  HULL ${h.hull}/${h.maxHull}  PASS ${h.pass}  RANGE ${h.range.toFixed(1)}/${h.maxRange}\n` +
         `VENTS ${h.vents}/${h.ventsMax}  SILOS ${h.silos}/${h.silosMax}  ENGINES ${h.engines}/${h.enginesMax}  ${fire}`,
     );
   }
