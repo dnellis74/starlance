@@ -1,4 +1,4 @@
-export const MAX_PILOTS = 16;
+export const MAX_PILOTS = 1;
 
 export const PILOT_STATUS = {
   ALIVE: "alive",

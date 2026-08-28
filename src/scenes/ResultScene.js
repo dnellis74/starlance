@@ -5,20 +5,20 @@ import { getScoreBreakdown, formatScoreValue } from "../scoring.js";
 
 const COPY = {
   destroyed: {
-    title: "Earth Saved",
+    title: "EARTH SAVED",
     body: "Every energy vent is gone. The dreadnaught explodes — Earth is saved.",
   },
   neutralized: {
-    title: "THREAT NEUTRALIZED",
-    body: "It reached the stargate, but every silo is cold. The planet holds.",
+    title: "Threat Neutralized",
+    body: "It reached the stargate, but every silo is cold. The Earth holds.",
   },
   planetLost: {
-    title: "GATE BREACHED",
-    body: "The dreadnaught closed the distance. The stargate is lost.",
+    title: "EARTH LOST",
+    body: "The dreadnaught closed the distance. The Earth is lost. The surviving pilots form a resistance.",
   },
   gameOver: {
-    title: "LANCE LOST",
-    body: `All ${MAX_PILOTS} pilots of the lance are gone. The dreadnaught continues its run.`,
+    title: "EARTH LOST",
+    body: `All ${MAX_PILOTS} pilots of the lance are gone. The dreadnaught continues its run. The Earth is lost.`,
   },
 };
 
