@@ -1,5 +1,5 @@
 import { PILOTS, PILOT_STATUS } from "./data/pilots.js";
-import { getDifficultyMods } from "./difficulty.js";
+import { formatDifficultyLabel, getDifficulty, getDifficultyMods } from "./difficulty.js";
 
 const SCORE_DREADNAUGHT_DESTROYED = 1000;
 const SCORE_ALIVE_PILOT = 10_000;
@@ -24,17 +24,17 @@ export function calculateFinalScore(outcome, pilotStatus) {
   return score;
 }
 
-export function formatScoreBreakdown(outcome, pilotStatus) {
+/** @returns {{ title: string, message?: string, rows: Array<{ label: string, value: number, total?: boolean } | { spacer: true }> }} */
+export function getScoreBreakdown(outcome, pilotStatus) {
   if (outcome === "planetLost") {
-    return ["SCORE", "", "Earth destroyed — no points awarded."].join("\n");
+    return {
+      title: "SCORE",
+      message: "Earth destroyed — no points awarded.",
+      rows: [],
+    };
   }
 
-  const lines = ["SCORE", ""];
-  if (outcome === "destroyed") {
-    const pts = dreadnaughtDestroyedPoints();
-    const mul = getDifficultyMods().dreadnaughtDestroyedScore;
-    lines.push(`Dreadnaught destroyed     +${pts.toLocaleString()} (${mul}x)`);
-  }
+  const rows = [];
 
   let alive = 0;
   let wounded = 0;
@@ -45,16 +45,28 @@ export function formatScoreBreakdown(outcome, pilotStatus) {
   }
 
   if (alive > 0) {
-    lines.push(
-      `Alive pilots (${alive})        +${(alive * SCORE_ALIVE_PILOT).toLocaleString()}`,
-    );
+    rows.push({ label: `Alive pilots (${alive})`, value: alive * SCORE_ALIVE_PILOT });
   }
   if (wounded > 0) {
-    lines.push(
-      `Wounded pilots (${wounded})     +${(wounded * SCORE_WOUNDED_PILOT).toLocaleString()}`,
-    );
+    rows.push({ label: `Wounded pilots (${wounded})`, value: wounded * SCORE_WOUNDED_PILOT });
   }
 
-  lines.push("", `Total                     ${calculateFinalScore(outcome, pilotStatus).toLocaleString()}`);
-  return lines.join("\n");
+  if (outcome === "destroyed") {
+    const mul = getDifficultyMods().dreadnaughtDestroyedScore;
+    const title = formatDifficultyLabel(getDifficulty());
+    rows.push({
+      label: `${title} difficulty bonus (${mul}x)`,
+      value: dreadnaughtDestroyedPoints(),
+    });
+  }
+
+  rows.push({ spacer: true });
+  rows.push({ label: "Total", value: calculateFinalScore(outcome, pilotStatus), total: true });
+
+  return { title: "SCORE", rows };
+}
+
+export function formatScoreValue(value, { total = false } = {}) {
+  if (total) return value.toLocaleString();
+  return `+${value.toLocaleString()}`;
 }
