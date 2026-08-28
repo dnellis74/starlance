@@ -2,7 +2,7 @@ import Phaser from "../engine.js";
 import { keys } from "../keys.js";
 import { formatPilotStatus } from "../data/pilots.js";
 import { WEAPON } from "../data/kinds.js";
-import { getDifficultyMods } from "../difficulty.js";
+import { COMBAT, getDifficultyMods } from "../difficulty.js";
 import {
   createGameState,
   damageComponent,
@@ -28,10 +28,6 @@ const LASER_COOLDOWN = 240;
 const LASER_LIFETIME = 1000;
 const LASER_FADE = 280;
 const BOMB_COOLDOWN = 420;
-const BOLT_SPEED = 270;
-const MISSILE_SPEED = 150;
-const BOLT_DAMAGE = 50;
-const MISSILE_DAMAGE = 100;
 
 export class PlayScene extends Phaser.Scene {
   constructor() {
@@ -95,7 +91,7 @@ export class PlayScene extends Phaser.Scene {
     this.physics.add.overlap(this.lasers, this.missiles, (laser, missile) => {
       laser.destroy();
       missile.destroy();
-      addDamage(this.state, 25);
+      addDamage(this.state, COMBAT.missileInterceptDamage);
       this.refreshHud();
     });
     this.physics.add.overlap(this.lasers, this.compGroup, (laser, sprite) => {
@@ -104,8 +100,8 @@ export class PlayScene extends Phaser.Scene {
     this.physics.add.overlap(this.bombs, this.compGroup, (bomb, sprite) => {
       this.strike(sprite, WEAPON.bomb, bomb);
     });
-    this.physics.add.overlap(this.ship, this.bolts, (_, shot) => this.hitPlayer(shot, BOLT_DAMAGE));
-    this.physics.add.overlap(this.ship, this.missiles, (_, shot) => this.hitPlayer(shot, MISSILE_DAMAGE));
+    this.physics.add.overlap(this.ship, this.bolts, (_, shot) => this.hitPlayer(shot, COMBAT.boltDamage));
+    this.physics.add.overlap(this.ship, this.missiles, (_, shot) => this.hitPlayer(shot, COMBAT.missileDamage));
 
     // Keep the ship low so more of the path ahead (toward the stargate) stays visible.
     this.cameras.main.startFollow(this.ship, true, 0.16, 0.14);
@@ -416,7 +412,7 @@ export class PlayScene extends Phaser.Scene {
     const b = this.bolts.create(gun.x, gun.y + 16, "bolt");
     const aim = this.leadBoltAim(gun.x, gun.y);
     const angle = Phaser.Math.Angle.Between(gun.x, gun.y, aim.x, aim.y);
-    this.physics.velocityFromRotation(angle, BOLT_SPEED, b.body.velocity);
+    this.physics.velocityFromRotation(angle, COMBAT.boltSpeed, b.body.velocity);
     b.setDepth(12);
   }
 
@@ -432,7 +428,7 @@ export class PlayScene extends Phaser.Scene {
     const py = this.ship.y - gunY;
     const vx = this.ship.body.velocity.x;
     const vy = this.ship.body.velocity.y;
-    const s = BOLT_SPEED;
+    const s = COMBAT.boltSpeed;
     const a = vx * vx + vy * vy - s * s;
     const b = 2 * (px * vx + py * vy);
     const c = px * px + py * py;
@@ -463,7 +459,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   steerMissiles() {
-    const missileSpeed = MISSILE_SPEED * getDifficultyMods().missileSpeed;
+    const missileSpeed = COMBAT.missileSpeed * getDifficultyMods().missileSpeed;
     this.missiles.children.iterate((m) => {
       if (!m) return;
       const angle = Phaser.Math.Angle.Between(m.x, m.y, this.ship.x, this.ship.y);

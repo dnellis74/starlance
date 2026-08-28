@@ -1,12 +1,8 @@
 import { PILOTS, PILOT_STATUS } from "./data/pilots.js";
-import { formatDifficultyLabel, getDifficulty, getDifficultyMods } from "./difficulty.js";
-
-const SCORE_DREADNAUGHT_DESTROYED = 1000;
-const SCORE_ALIVE_PILOT = 10_000;
-const SCORE_WOUNDED_PILOT = 8_000;
+import { formatDifficultyLabel, getDifficulty, getDifficultyMods, SCORE } from "./difficulty.js";
 
 function dreadnaughtDestroyedPoints() {
-  return SCORE_DREADNAUGHT_DESTROYED * getDifficultyMods().dreadnaughtDestroyedScore;
+  return SCORE.dreadnaughtDestroyed * getDifficultyMods().dreadnaughtDestroyedScore;
 }
 
 export function calculateFinalScore(outcome, pilotStatus) {
@@ -17,8 +13,8 @@ export function calculateFinalScore(outcome, pilotStatus) {
 
   for (const pilot of PILOTS) {
     const status = pilotStatus?.[pilot.id] ?? PILOT_STATUS.ALIVE;
-    if (status === PILOT_STATUS.ALIVE) score += SCORE_ALIVE_PILOT;
-    else if (status === PILOT_STATUS.WOUNDED) score += SCORE_WOUNDED_PILOT;
+    if (status === PILOT_STATUS.ALIVE) score += SCORE.alivePilot;
+    else if (status === PILOT_STATUS.WOUNDED) score += SCORE.woundedPilot;
   }
 
   return score;
@@ -45,10 +41,10 @@ export function getScoreBreakdown(outcome, pilotStatus) {
   }
 
   if (alive > 0) {
-    rows.push({ label: `Alive pilots (${alive})`, value: alive * SCORE_ALIVE_PILOT });
+    rows.push({ label: `Alive pilots (${alive})`, value: alive * SCORE.alivePilot });
   }
   if (wounded > 0) {
-    rows.push({ label: `Wounded pilots (${wounded})`, value: wounded * SCORE_WOUNDED_PILOT });
+    rows.push({ label: `Wounded pilots (${wounded})`, value: wounded * SCORE.woundedPilot });
   }
 
   if (outcome === "destroyed") {

@@ -12,26 +12,14 @@ import {
   pilotForIndex,
   pilotsAvailable,
 } from "../data/pilots.js";
-
-/** MVP: a single selectable skill. Extra skills can be added as more records. */
-export const SKILLS = {
-  standard: {
-    id: "standard",
-    name: "Standard",
-    maxHull: 100,
-    maxRange: 80,
-    initialCruiserSpeed: 10,
-    engineSpeedPenalty: 2,
-    fireIntervalMs: 1400,
-  },
-};
+import { COMBAT, getSkill } from "../difficulty.js";
 
 function createPilotStatus() {
   return Object.fromEntries(PILOTS.map((p) => [p.id, PILOT_STATUS.ALIVE]));
 }
 
 export function createGameState(skillId = "standard") {
-  const skill = SKILLS[skillId] ?? SKILLS.standard;
+  const skill = getSkill(skillId);
   const dreadnaught = instantiateDreadnaught(LEVIATHAN);
 
   return {
@@ -114,7 +102,7 @@ export function syncDerivedState(state) {
   const silos = countAlive(state.dreadnaught, "silo");
   const bridges = countAlive(state.dreadnaught, "bridge");
 
-  state.fireRateMul = bridges === 0 ? 0.5 : 1;
+  state.fireRateMul = bridges === 0 ? COMBAT.bridgeDestroyedFireRate : 1;
 
   if (vents === 0) {
     state.outcome = "destroyed";

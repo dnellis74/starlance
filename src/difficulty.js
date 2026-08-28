@@ -1,4 +1,34 @@
+/** Game stats — skills, scoring, combat tuning, and difficulty modifiers. */
+
 export const DIFFICULTIES = ["training sim", "green", "veteran", "ace"];
+
+/** MVP: a single selectable skill. Extra skills can be added as more records. */
+export const SKILLS = Object.freeze({
+  standard: Object.freeze({
+    id: "standard",
+    name: "Standard",
+    maxHull: 100,
+    maxRange: 80,
+    initialCruiserSpeed: 10,
+    engineSpeedPenalty: 2,
+    fireIntervalMs: 1400,
+  }),
+});
+
+export const SCORE = {
+  dreadnaughtDestroyed: 1000,
+  alivePilot: 10_000,
+  woundedPilot: 8_000,
+};
+
+export const COMBAT = {
+  boltSpeed: 270,
+  missileSpeed: 150,
+  boltDamage: 50,
+  missileDamage: 100,
+  missileInterceptDamage: 25,
+  bridgeDestroyedFireRate: 0.5,
+};
 
 /** Veteran values in PlayScene are the 1.0 baseline. */
 const DIFFICULTY_MODS = {
@@ -9,6 +39,11 @@ const DIFFICULTY_MODS = {
 };
 
 let current = DIFFICULTIES[1];
+
+export function getSkill(skillId = "standard") {
+  const skill = SKILLS[skillId] ?? SKILLS.standard;
+  return { ...skill };
+}
 
 export function getDifficulty() {
   return current;
