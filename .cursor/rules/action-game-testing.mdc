@@ -1,0 +1,24 @@
+---
+description: StarLance is an action game — do not fake playtests in the browser or elsewhere
+alwaysApply: true
+---
+
+# Action game — do not playtest as the agent
+
+StarLance is a Phaser canvas **action video game** (timing, feel, thumbs, keyboard). The agent is not capable of testing it as a player.
+
+## Do not
+
+- Drive gameplay with Cursor browser tools, device emulation, synthetic pointer/touch/keyboard events, or CDP input
+- Treat canvas screenshots, accessibility snapshots, or “phone viewport” chrome as a playtest
+- Keep retrying when those methods fail — they cannot succeed for this game
+- Claim controls, combat, or feel are verified after agent-side probing
+
+## Do
+
+- Implement from code and the request; check that input is wired (handlers exist, keyboard still works in code)
+- Start the dev server only if needed to confirm the app boots — that is not a playtest
+- State clearly what is unverified and that a human must try it (desktop keyboard and a real phone)
+- Stop after implementation; wait for player notes instead of inventing a test loop
+
+User rules about “verify web UI in the browser” do **not** apply to playing this game.

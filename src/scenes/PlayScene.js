@@ -1,5 +1,14 @@
 import Phaser from "../engine.js";
 import { keys } from "../keys.js";
+import {
+  attachPlayTouch,
+  applyTouchFlight,
+  isTouchLaser,
+  isTouchBomb,
+  updateBombButton,
+  clearAllTouch,
+  touchControlsEnabled,
+} from "../touchControls.js";
 import { formatPilotStatus } from "../data/pilots.js";
 import { WEAPON } from "../data/kinds.js";
 import { COMBAT, getDifficultyMods } from "../difficulty.js";
@@ -109,11 +118,15 @@ export class PlayScene extends Phaser.Scene {
     this.cameras.main.setDeadzone(28, 48);
 
     this.buildHud();
+    attachPlayTouch(this);
     beginRun(this.state, { advance: false });
     this.refreshHud();
     this.showRunIntro();
     this.startBgm();
-    this.events.once("shutdown", () => this.stopBgm());
+    this.events.once("shutdown", () => {
+      this.stopBgm();
+      clearAllTouch(this);
+    });
   }
 
   startBgm() {
@@ -152,6 +165,7 @@ export class PlayScene extends Phaser.Scene {
 
     this.updateShip();
     this.updateWeapons();
+    updateBombButton(this, this.bombCd);
     this.updateEnemyFire(delta);
     this.steerMissiles();
     this.cullProjectiles();
@@ -308,14 +322,22 @@ export class PlayScene extends Phaser.Scene {
 
   updateShip() {
     // ↑ faster climb, ↓ slower. Forward is always toward the stargate (smaller y).
-    if (keys.up) this.speed += 4;
-    if (keys.down) this.speed -= 4;
+    const touch = applyTouchFlight(this, this.ship, this.speed, MIN_SPEED, MAX_SPEED);
+    if (touch.x != null) {
+      this.ship.x = touch.x;
+      this.speed = touch.speed;
+    } else {
+      if (keys.up) this.speed += 4;
+      if (keys.down) this.speed -= 4;
+    }
     this.speed = Phaser.Math.Clamp(this.speed, MIN_SPEED, MAX_SPEED);
     this.ship.setVelocityY(-this.speed);
 
     let vx = 0;
-    if (keys.left) vx = -STRAFE_SPEED;
-    else if (keys.right) vx = STRAFE_SPEED;
+    if (touch.x == null) {
+      if (keys.left) vx = -STRAFE_SPEED;
+      else if (keys.right) vx = STRAFE_SPEED;
+    }
     this.ship.setVelocityX(vx);
     this.updateFlame();
   }
@@ -328,8 +350,8 @@ export class PlayScene extends Phaser.Scene {
   }
 
   updateWeapons() {
-    const fireLaser = keys.z || keys.space;
-    const fireBomb = keys.x || keys.shift;
+    const fireLaser = keys.z || keys.space || isTouchLaser(this);
+    const fireBomb = keys.x || keys.shift || isTouchBomb(this);
 
     if (fireLaser && this.laserCd <= 0) {
       this.laserCd = LASER_COOLDOWN;
@@ -549,6 +571,7 @@ export class PlayScene extends Phaser.Scene {
     keys.x = false;
     keys.space = false;
     keys.shift = false;
+    clearAllTouch(this);
     this.time.delayedCall(500, () => {
       this.scene.start("ResultScene", {
         outcome: this.state.outcome,
@@ -562,6 +585,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   buildHud() {
+    const touch = touchControlsEnabled();
     this.hud = this.add.container(0, 0).setScrollFactor(0).setDepth(50);
     const bar = this.add.rectangle(VIEW_W / 2, 28, VIEW_W, 56, 0x020617, 0.78);
     this.hudText = this.add.text(14, 10, "", {
@@ -571,12 +595,20 @@ export class PlayScene extends Phaser.Scene {
       lineSpacing: 3,
     });
     this.help = this.add
-      .text(VIEW_W / 2, VIEW_H - 18, "←→ align   ↑ faster   ↓ slower   Z laser   X bomb", {
-        fontFamily: "Rajdhani, sans-serif",
-        fontSize: "13px",
-        color: "#64748b",
-      })
-      .setOrigin(0.5, 1)
+      .text(
+        touch ? 16 : VIEW_W / 2,
+        VIEW_H - 18,
+        touch
+          ? "drag: fly + laser   ↑↓←→ keys   Z laser   X / BOMB"
+          : "←→ align   ↑ faster   ↓ slower   Z laser   X bomb",
+        {
+          fontFamily: "Rajdhani, sans-serif",
+          fontSize: "13px",
+          color: "#64748b",
+          wordWrap: touch ? { width: VIEW_W - 200 } : undefined,
+        },
+      )
+      .setOrigin(touch ? 0 : 0.5, 1)
       .setScrollFactor(0)
       .setDepth(50);
     this.hud.add([bar, this.hudText]);

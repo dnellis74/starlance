@@ -1,5 +1,6 @@
 import Phaser from "../engine.js";
 import { keys, consume } from "../keys.js";
+import { touchControlsEnabled } from "../touchControls.js";
 import {
   DIFFICULTIES,
   getDifficultyIndex,
@@ -264,12 +265,19 @@ export class MenuScene extends Phaser.Scene {
     });
 
     this.add
-      .text(w / 2, h * 0.86, "↑↓ difficulty   ↑ climb   ←→ align   Z laser   X bomb", {
-        fontFamily: BODY,
-        fontSize: "13px",
-        color: "#64748b",
-        letterSpacing: 1,
-      })
+      .text(
+        w / 2,
+        h * 0.86,
+        touchControlsEnabled()
+          ? "↑↓ difficulty   drag to fly + laser   BOMB / X"
+          : "↑↓ difficulty   ↑ climb   ←→ align   Z laser   X bomb",
+        {
+          fontFamily: BODY,
+          fontSize: "13px",
+          color: "#64748b",
+          letterSpacing: 1,
+        },
+      )
       .setOrigin(0.5);
   }
 }

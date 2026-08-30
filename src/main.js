@@ -16,6 +16,7 @@ const config = {
     keyboard: true,
     mouse: true,
     touch: true,
+    activePointers: 4,
   },
   scale: {
     mode: Phaser.Scale.FIT,

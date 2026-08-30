@@ -10,6 +10,10 @@ body {
   height: 100%;
   overflow: hidden;
   background: #02040a;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 #game {
@@ -19,4 +23,5 @@ body {
 
 #game canvas {
   display: block;
+  touch-action: none;
 }
