@@ -104,6 +104,7 @@ export class BriefingScene extends Phaser.Scene {
   advance() {
     if (!this.armed || this.leaving) return;
     this.leaving = true;
+    this.game.plugins.get("GameAnalyticsPlugin")?.trackDesign("briefing:skip");
     keys.z = false;
     keys.space = false;
     keys.enter = false;

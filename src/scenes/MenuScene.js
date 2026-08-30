@@ -4,6 +4,7 @@ import { touchControlsEnabled } from "../touchControls.js";
 import {
   DIFFICULTIES,
   getDifficultyIndex,
+  getDifficulty,
   setDifficultyIndex,
   formatDifficultyLabel,
 } from "../difficulty.js";
@@ -83,6 +84,9 @@ export class MenuScene extends Phaser.Scene {
     keys.enter = false;
     keys.space = false;
     setDifficultyIndex(this.selectedIndex);
+    this.game.plugins
+      .get("GameAnalyticsPlugin")
+      ?.trackDesign(`menu:start:${getDifficulty()}`);
     if (this.cache.audio.exists("sfx-engage")) {
       this.sound.play("sfx-engage", { volume: 0.6 });
     }

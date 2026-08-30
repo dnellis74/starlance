@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "gameanalytics": "^5.0.0",
     "phaser": "^3.88.2"
   },
   "devDependencies": {

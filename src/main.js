@@ -1,4 +1,5 @@
 import Phaser from "./engine.js";
+import { GameAnalyticsPlugin } from "./analytics/gameAnalyticsPlugin.js";
 import { BootScene } from "./scenes/BootScene.js";
 import { MenuScene } from "./scenes/MenuScene.js";
 import { BriefingScene } from "./scenes/BriefingScene.js";
@@ -32,6 +33,15 @@ const config = {
     },
   },
   scene: [BootScene, MenuScene, BriefingScene, PlayScene, ResultScene],
+  plugins: {
+    global: [
+      {
+        key: "GameAnalyticsPlugin",
+        plugin: GameAnalyticsPlugin,
+        start: true,
+      },
+    ],
+  },
 };
 
 const game = new Phaser.Game(config);

@@ -126,6 +126,11 @@ export class ResultScene extends Phaser.Scene {
     };
     this.armed = false;
     this.leaving = false;
+    this.game.plugins.get("GameAnalyticsPlugin")?.trackRunResult(
+      this.result.outcome,
+      this.result.pass,
+      this.result.damage,
+    );
   }
 
   create() {
